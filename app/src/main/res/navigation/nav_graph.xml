@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/LogInFragment">
+
+    <fragment
+        android:id="@+id/LogInFragment"
+        android:name="com.ko.simple_chat.fragment.LogInFragment"
+        tools:layout="@layout/fragment_login">
+
+        <action
+            android:id="@+id/action_to_UserList"
+            app:destination="@+id/UserListFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/UserListFragment"
+        android:name="com.ko.simple_chat.fragment.UserListFragment"
+        tools:layout="@layout/fragment_user_list">
+
+        <action
+            android:id="@+id/action_to_ChatRoom"
+            app:destination="@+id/ChatRoomFragment" />
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/ChatRoomFragment"
+        android:name="com.ko.simple_chat.fragment.ChatRoomFragment"
+        tools:layout="@layout/fragment_chat_room">
+
+    </fragment>
+
+</navigation>
