@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -31,6 +32,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
 }
 
 dependencies {
@@ -43,6 +48,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
     implementation("com.jakewharton.timber:timber:5.0.1")
     implementation("com.google.android.gms:play-services-auth:21.0.0")
+    implementation("androidx.multidex:multidex:2.0.1")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
