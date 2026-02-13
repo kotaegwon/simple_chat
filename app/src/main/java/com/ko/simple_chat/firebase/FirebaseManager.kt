@@ -9,6 +9,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.storage
+import com.ko.simple_chat.model.Chat
 import com.ko.simple_chat.model.User
 
 object FirebaseManager {
@@ -146,4 +147,79 @@ object FirebaseManager {
                 onResult(list)
             }
     }
+
+
+    /**
+     * 두 사람 uid로 방 만들기
+     */
+    fun makeRoom(myUid: String, otherUid: String): String {
+        return if (myUid < otherUid) {
+            "${myUid}_${otherUid}"
+        } else {
+            "${otherUid}_${myUid}"
+        }
+    }
+
+    /**
+     * 메시지 송신
+     */
+    fun sendMessage(otherUid: String, message: String, onResult: (Boolean) -> Unit) {
+
+        val myUid = auth.currentUser?.uid ?: return
+        val roomUid = makeRoom(myUid, otherUid)
+
+        val chat = Chat(
+            myUid = myUid,
+            otherUid = otherUid,
+            message = message,
+            time = System.currentTimeMillis()
+        )
+
+        val roomRef = db.collection("chatRooms").document(roomUid)
+
+        // 방 정보 갱신
+        val roomData = hashMapOf(
+            "users" to listOf(myUid, otherUid),
+            "lastMessage" to message,
+            "updateAt" to chat.time
+        )
+
+        roomRef.set(roomData)
+
+        // 메시지 저장
+        roomRef.collection("messages")
+            .add(chat)
+            .addOnSuccessListener {
+                onResult(true)
+            }.addOnFailureListener {
+                onResult(false)
+            }
+    }
+
+    /**
+     * 메시지 수신
+     */
+
+    fun listenMessage(otherUid: String, onResult: (List<Chat>) -> Unit) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        val roomId = makeRoom(myUid, otherUid)
+
+        db.collection("chatRooms")
+            .document(roomId)
+            .collection("messages")
+            .orderBy("time")
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot == null) return@addSnapshotListener
+
+                val list = mutableListOf<Chat>()
+
+                for (doc in snapshot.documents) {
+                    val chat = doc.toObject(Chat::class.java)
+                    chat?.let { list.add(it) }
+                }
+                onResult(list)
+            }
+    }
+
 }

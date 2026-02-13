@@ -7,9 +7,7 @@ import com.ko.simple_chat.Utils.TimeUtil
 import com.ko.simple_chat.databinding.ReceiveItemBinding
 import com.ko.simple_chat.databinding.SendItemBinding
 import com.ko.simple_chat.model.Chat
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import timber.log.Timber
 
 class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -73,7 +71,8 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     class SendViewHolder(val binding: SendItemBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(chat: Chat) {
-            binding.tvTime.text = TimeUtil.formatTIme(chat.timeStamp)
+            Timber.d("SendViewHolder bind : $chat")
+            binding.tvTime.text = TimeUtil.formatTIme(chat.time)
             binding.tvMessage.text = chat.message
         }
     }
@@ -82,6 +81,7 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(chat: Chat) {
+            Timber.d("ReceiveViewHolder bind : $chat")
             binding.tvTime.text = TimeUtil.formatTIme(System.currentTimeMillis())
             binding.tvMessage.text = chat.message
         }
