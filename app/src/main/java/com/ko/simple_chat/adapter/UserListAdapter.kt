@@ -44,6 +44,8 @@ class UserListAdapter(val listner: Listner) : RecyclerView.Adapter<RecyclerView.
         Timber.d("onBindViewHolder +")
 
         val user = itemList[position]
+        Timber.d("onBindViewHodler: user: $user")
+
         (holder as UserViewHolder).bind(user)
 
         holder.itemView.setOnClickListener {

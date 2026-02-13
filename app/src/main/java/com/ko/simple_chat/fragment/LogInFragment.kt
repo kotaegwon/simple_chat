@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -24,13 +25,16 @@ import com.google.android.material.textfield.TextInputEditText
 import com.ko.simple_chat.R
 import com.ko.simple_chat.databinding.FragmentLoginBinding
 import com.ko.simple_chat.firebase.FirebaseManager
+import com.ko.simple_chat.viewmodel.ToolbarViewModel
 import timber.log.Timber
+import kotlin.getValue
 
 class LogInFragment : Fragment(), View.OnClickListener {
     private var _binding: FragmentLoginBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var googleSignInClient: GoogleSignInClient
+    val viewModel: ToolbarViewModel by activityViewModels()
 
     fun Fragment.toast(@StringRes resId: Int) {
         Toast.makeText(requireContext(), resId, Toast.LENGTH_SHORT).show()
@@ -72,6 +76,8 @@ class LogInFragment : Fragment(), View.OnClickListener {
         binding.btnRegister.setOnClickListener(this)
 //        binding.btnGoogle.setOnClickListener(this)
         binding.imageVisibility.setOnClickListener(this)
+
+        viewModel.hide()
     }
 
     override fun onDestroyView() {

@@ -128,4 +128,22 @@ object FirebaseManager {
             .document(user.uid)
             .set(data)
     }
+
+    /**
+     * 전체 유저 목록 가져오기
+     */
+    fun loadUserList(onResult: (List<User>) -> Unit) {
+        db.collection("users")
+            .get()
+            .addOnSuccessListener { result ->
+                val list = mutableListOf<User>()
+
+                for (document in result) {
+                    val user = document.toObject(User::class.java)
+                    list.add(user)
+                }
+
+                onResult(list)
+            }
+    }
 }
