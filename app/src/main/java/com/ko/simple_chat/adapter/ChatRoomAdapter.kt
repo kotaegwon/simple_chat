@@ -3,7 +3,7 @@ package com.ko.simple_chat.adapter
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.ko.simple_chat.Utils.TimeUtil
+import com.ko.simple_chat.Utils.Utils
 import com.ko.simple_chat.databinding.ReceiveItemBinding
 import com.ko.simple_chat.databinding.SendItemBinding
 import com.ko.simple_chat.model.Chat
@@ -72,7 +72,7 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         fun bind(chat: Chat) {
             Timber.d("SendViewHolder bind : $chat")
-            binding.tvTime.text = TimeUtil.formatTIme(chat.time)
+            binding.tvTime.text = Utils.formatTIme(chat.time)
             binding.tvMessage.text = chat.message
         }
     }
@@ -82,7 +82,7 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         fun bind(chat: Chat) {
             Timber.d("ReceiveViewHolder bind : $chat")
-            binding.tvTime.text = TimeUtil.formatTIme(System.currentTimeMillis())
+            binding.tvTime.text = Utils.formatTIme(System.currentTimeMillis())
             binding.tvMessage.text = chat.message
         }
     }

@@ -19,18 +19,36 @@ import com.ko.simple_chat.model.User
 import com.ko.simple_chat.viewmodel.ChatViewModel
 import com.ko.simple_chat.viewmodel.ToolbarViewModel
 
+/**
+ * 채팅방 프래그먼트
+ * Firebase Authentication에 등록된 사용자 목록을 표시한다
+ * 사용자를 선택하면 채팅방으로 이동한다
+ * 송신 메시지와 수신 메시지를 표시한다
+ * 송신 버튼을 누르면 메시지를 전송한다
+ */
 class ChatRoomFragment : Fragment(), View.OnClickListener {
+
+    // ViewBinding
     private var _binding: FragmentChatRoomBinding? = null
     private val binding get() = _binding!!
+
+    // RecyclerView Adapter
     private lateinit var adapter: ChatRoomAdapter
     var user: User? = null
 
+    // Activity 범위 ViewModel - 툴바 설정용
     val viewModel: ToolbarViewModel by activityViewModels()
+
+    // ChatViewModel
     val chatViewModel: ChatViewModel by viewModels()
 
+    // 나의 UID와 상대방의 UID
     var myUid: String = ""
     var otherUid: String = ""
 
+    /**
+     * 프래그먼트의 레이아웃을 inflate하고 초기 UI 설정
+     */
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -49,6 +67,11 @@ class ChatRoomFragment : Fragment(), View.OnClickListener {
         return binding.root
     }
 
+    /**
+     * 뷰가 생성된 직후 호출
+     * Firebase에서 사용자 목록과 내 정보 로드
+     * 채팅방 메시지 관찰 및 Adapter에 적용
+     */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -60,8 +83,11 @@ class ChatRoomFragment : Fragment(), View.OnClickListener {
 
         binding.imgSend.setOnClickListener(this)
 
+
+        // 채팅방 ID 생성
         chatViewModel.listenChat(otherUid)
 
+        // 특정 id의 채팅 내역을 listenChat으로 관찰
         chatViewModel.chatList.observe(viewLifecycleOwner) { list ->
             val list = list.map {
                 if (it.myUid == myUid) {
@@ -76,12 +102,19 @@ class ChatRoomFragment : Fragment(), View.OnClickListener {
         }
     }
 
+    /**
+     * 프래그먼트의 뷰가 소멸될 때 호출
+     * 메모리 누수를 방지하기 위해 binding 해제
+     */
     override fun onDestroyView() {
         super.onDestroyView()
 
         _binding = null
     }
 
+    /**
+     * UserListFragment로 부터 User 클래스를 전달 받음
+     */
     private fun getArgument(): User? {
         val user = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             arguments?.getParcelable(
@@ -98,6 +131,9 @@ class ChatRoomFragment : Fragment(), View.OnClickListener {
         return user
     }
 
+    /**
+     * 리사이클러뷰 송수신 레이아웃 더미 데이터
+     */
     private fun uiAdapterTest() {
         val testList = mutableListOf<ChatTypeItem>()
         val sendData = Chat(

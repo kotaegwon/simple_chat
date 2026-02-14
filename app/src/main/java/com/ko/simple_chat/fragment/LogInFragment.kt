@@ -29,17 +29,28 @@ import com.ko.simple_chat.viewmodel.ToolbarViewModel
 import timber.log.Timber
 import kotlin.getValue
 
+/**
+ * 로그인 프래그먼트
+ * Firebase Authentication을 사용하여 로그인을 처리한다
+ * 로그인 성공 시 UserListFragment로 이동한다
+ */
 class LogInFragment : Fragment(), View.OnClickListener {
+
+    // ViewBinding
     private var _binding: FragmentLoginBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var googleSignInClient: GoogleSignInClient
+
+    // Activity 범위 ViewModel - 툴바 설정용
     val viewModel: ToolbarViewModel by activityViewModels()
 
+    // string.xml resource toast
     fun Fragment.toast(@StringRes resId: Int) {
         Toast.makeText(requireContext(), resId, Toast.LENGTH_SHORT).show()
     }
 
+    // string.xml string toast
     fun Fragment.toast(msg: String) {
         Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
     }
@@ -57,6 +68,9 @@ class LogInFragment : Fragment(), View.OnClickListener {
             }
         }
 
+    /**
+     * 프래그먼트의 레이아웃을 inflate하고 초기 UI 설정
+     */
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -67,6 +81,12 @@ class LogInFragment : Fragment(), View.OnClickListener {
         return binding.root
     }
 
+    /**
+     * 뷰가 생성된 직후 호출
+     *
+     * 클릭 리스너 설정
+     * Toolbar 숨김
+     */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -80,11 +100,26 @@ class LogInFragment : Fragment(), View.OnClickListener {
         viewModel.hide()
     }
 
+    /**
+     * 프래그먼트의 뷰가 소멸될 때 호출
+     * 메모리 누수를 방지하기 위해 binding 해제
+     */
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
 
+    /**
+     * 로그인
+     *
+     * Firebase Authentication을 사용하여 로그인을 처리한다
+     * 로그인 성공 시 UserListFragment로 이동한다
+     *
+     * @param email 사용자 이메일
+     * @param pwd 사용자 비밀번호
+     *
+     * @return 로그인 성공 시 true, 실패 시 false
+     */
     private fun login(email: String, pwd: String) {
         FirebaseManager.auth
             .signInWithEmailAndPassword(email, pwd)
@@ -111,6 +146,16 @@ class LogInFragment : Fragment(), View.OnClickListener {
             }
     }
 
+    /**
+     * 회원가입
+     *
+     * Firebase Authentication을 사용하여 회원가입을 처리한다
+     * 회원가입 성공 시 UserListFragment로 이동한다
+     *
+     * @param email 사용자 이메일
+     * @param pwd 사용자 비밀번호
+     * @param name 사용자 이름
+     */
     private fun register(email: String, pwd: String, name: String) {
         FirebaseManager.register(email, pwd, name) { success, error ->
 
@@ -122,6 +167,12 @@ class LogInFragment : Fragment(), View.OnClickListener {
         }
     }
 
+    /**
+     * 구글 로그인
+     *
+     * GoogleSignInOptions을 사용하여 구글 로그인을 처리한다
+     * 로그인 성공 시 UserListFragment로 이동한다
+     */
     private fun initGoogleLogin() {
         val gos = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
@@ -134,6 +185,12 @@ class LogInFragment : Fragment(), View.OnClickListener {
         )
     }
 
+    /**
+     * 구글 로그인 인증
+     *
+     * GoogleSignInAccount을 사용하여 구글 로그인 인증을 처리한다
+     * 로그인 성공 시 UserListFragment로 이동한다
+     */
     private fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
         FirebaseManager.firebaseAuthWithGoogle(account) { success, error ->
             if (success) {
@@ -146,6 +203,13 @@ class LogInFragment : Fragment(), View.OnClickListener {
         }
     }
 
+    /**
+     * 회원가입 다이얼로그 표시
+     *
+     * AlertDialog를 사용하여 회원가입 다이얼로그를 표시한다
+     * 다이얼로그에서 회원가입을 처리한다
+     * 회원가입 성공 시 UserListFragment로 이동한다
+     */
     fun showRegisterDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_register, null)
         val dialog = AlertDialog.Builder(requireContext())
@@ -205,6 +269,11 @@ class LogInFragment : Fragment(), View.OnClickListener {
         dialog.show()
     }
 
+    /**
+     * 뷰 클릭 이벤트를 처리한다
+     *
+     * 클릭된 뷰의 ID에 따라 다른 동작을 수행합니다.
+     */
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.btn_login -> {
