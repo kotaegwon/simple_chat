@@ -5,26 +5,21 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import com.ko.simple_chat.databinding.ActivityMainBinding
-import com.ko.simple_chat.viewmodel.ToolbarViewModel
 import timber.log.Timber
+
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
-
-    val viewModel: ToolbarViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,24 +36,12 @@ class MainActivity : AppCompatActivity() {
 //            insets
 //        }
         setSupportActionBar(binding.toolbar)
-        observeToolbar()
 
         navController = findNavController(R.id.nav_host_fragment_content_main)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-    }
-
-    private fun observeToolbar() {
-        viewModel.title.observe(this) {
-            supportActionBar?.title = it
-            Timber.d("titleToolbar: $it")
-        }
-        viewModel.showToolbar.observe(this) {
-            binding.toolbar.isVisible = it
-            Timber.d("showToolbar: $it")
-        }
     }
 
     private val permissionLauncher =
