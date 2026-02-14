@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -17,7 +18,6 @@ import com.ko.simple_chat.firebase.FirebaseManager
 import com.ko.simple_chat.model.Chat
 import com.ko.simple_chat.model.User
 import com.ko.simple_chat.viewmodel.ChatViewModel
-import com.ko.simple_chat.viewmodel.ToolbarViewModel
 
 /**
  * 채팅방 프래그먼트
@@ -26,18 +26,13 @@ import com.ko.simple_chat.viewmodel.ToolbarViewModel
  * 송신 메시지와 수신 메시지를 표시한다
  * 송신 버튼을 누르면 메시지를 전송한다
  */
-class ChatRoomFragment : Fragment(), View.OnClickListener {
+class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, Chat>(), View.OnClickListener {
 
-    // ViewBinding
-    private var _binding: FragmentChatRoomBinding? = null
-    private val binding get() = _binding!!
 
     // RecyclerView Adapter
     private lateinit var adapter: ChatRoomAdapter
     var user: User? = null
 
-    // Activity 범위 ViewModel - 툴바 설정용
-    val viewModel: ToolbarViewModel by activityViewModels()
 
     // ChatViewModel
     val chatViewModel: ChatViewModel by viewModels()
@@ -46,26 +41,38 @@ class ChatRoomFragment : Fragment(), View.OnClickListener {
     var myUid: String = ""
     var otherUid: String = ""
 
-    /**
-     * 프래그먼트의 레이아웃을 inflate하고 초기 UI 설정
-     */
-    override fun onCreateView(
+
+    override fun inflateBinding(
         inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-
-        _binding = FragmentChatRoomBinding.inflate(inflater, container, false)
-
-
-        val layoutManager = LinearLayoutManager(requireContext())
-        adapter = ChatRoomAdapter()
-
-        binding.mainRecyclerview.layoutManager = layoutManager
-        binding.mainRecyclerview.adapter = adapter
-
-        return binding.root
+        container: ViewGroup?
+    ): FragmentChatRoomBinding {
+        return FragmentChatRoomBinding.inflate(inflater, container, false)
     }
+
+    override fun match(
+        item: Chat,
+        keyword: String
+    ): Boolean {
+        return item.message
+            .lowercase()
+            .contains(keyword)
+    }
+
+    override fun submitList(list: List<Chat>) {
+
+        val uiList = list.map {
+            if (it.myUid == myUid) {
+                ChatTypeItem.Send(it)
+            } else {
+                ChatTypeItem.Receive(it)
+            }
+        }
+
+        adapter.submitList(uiList)
+
+        binding.mainRecyclerview.scrollToPosition(uiList.size - 1)
+    }
+
 
     /**
      * 뷰가 생성된 직후 호출
@@ -75,6 +82,15 @@ class ChatRoomFragment : Fragment(), View.OnClickListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setUpMenu()
+
+        adapter = ChatRoomAdapter()
+
+        val layoutManager = LinearLayoutManager(requireContext())
+        binding.mainRecyclerview.layoutManager = layoutManager
+        binding.mainRecyclerview.adapter = adapter
+
+
         user = getArgument()
 
 //        uiAdapterTest()
@@ -83,33 +99,21 @@ class ChatRoomFragment : Fragment(), View.OnClickListener {
 
         binding.imgSend.setOnClickListener(this)
 
-
         // 채팅방 ID 생성
         chatViewModel.listenChat(otherUid)
 
         // 특정 id의 채팅 내역을 listenChat으로 관찰
         chatViewModel.chatList.observe(viewLifecycleOwner) { list ->
-            val list = list.map {
-                if (it.myUid == myUid) {
-                    ChatTypeItem.Send(it)
-                } else {
-                    ChatTypeItem.Receive(it)
-                }
-            }
-            adapter.submitList(list)
+            originList.clear()
+            originList.addAll(list)
+
+            filterList.clear()
+            filterList.addAll(list)
+
+            submitList(list)
 
             binding.mainRecyclerview.scrollToPosition(list.size - 1)
         }
-    }
-
-    /**
-     * 프래그먼트의 뷰가 소멸될 때 호출
-     * 메모리 누수를 방지하기 위해 binding 해제
-     */
-    override fun onDestroyView() {
-        super.onDestroyView()
-
-        _binding = null
     }
 
     /**
@@ -126,7 +130,7 @@ class ChatRoomFragment : Fragment(), View.OnClickListener {
             arguments?.getParcelable("diary_item")
         }
 
-        viewModel.setToolbar(true, "${user?.name}")
+        setToolbar(true, user!!.name, true)
 
         return user
     }
