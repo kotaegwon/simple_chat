@@ -3,7 +3,6 @@ package com.ko.simple_chat.fragment
 import android.app.AlertDialog
 import android.os.Bundle
 import android.text.InputType
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +11,7 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
@@ -21,12 +21,10 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.textfield.TextInputEditText
+import com.google.firebase.auth.FirebaseAuth
 import com.ko.simple_chat.R
 import com.ko.simple_chat.databinding.FragmentLoginBinding
 import com.ko.simple_chat.firebase.FirebaseManager
-import com.ko.simple_chat.viewmodel.ToolbarViewModel
-import timber.log.Timber
 import kotlin.getValue
 
 /**
@@ -42,8 +40,10 @@ class LogInFragment : Fragment(), View.OnClickListener {
 
     private lateinit var googleSignInClient: GoogleSignInClient
 
-    // Activity 범위 ViewModel - 툴바 설정용
-    val viewModel: ToolbarViewModel by activityViewModels()
+    private var isVisible = false
+
+    private lateinit var authListener: FirebaseAuth.AuthStateListener
+
 
     // string.xml resource toast
     fun Fragment.toast(@StringRes resId: Int) {
@@ -90,14 +90,33 @@ class LogInFragment : Fragment(), View.OnClickListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setToolbar()
         initGoogleLogin()
 
         binding.btnLogin.setOnClickListener(this)
         binding.btnRegister.setOnClickListener(this)
-//        binding.btnGoogle.setOnClickListener(this)
         binding.imageVisibility.setOnClickListener(this)
+        binding.btnLogout.setOnClickListener(this)
+        binding.btnStartTalk.setOnClickListener(this)
+//        binding.btnGoogle.setOnClickListener(this)
 
-        viewModel.hide()
+        authListener = FirebaseAuth.AuthStateListener { auth ->
+            if (auth.currentUser == null) {
+                updateUi(false)
+            } else {
+                updateUi(true)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        FirebaseManager.auth.addAuthStateListener(authListener)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        FirebaseManager.auth.removeAuthStateListener(authListener)
     }
 
     /**
@@ -269,6 +288,43 @@ class LogInFragment : Fragment(), View.OnClickListener {
         dialog.show()
     }
 
+    private fun toggleVisibility() {
+        isVisible = !isVisible
+
+        if (isVisible) {
+            binding.editPwd.inputType =
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            binding.imageVisibility.setImageResource(R.drawable.visibility)
+        } else {
+            binding.editPwd.inputType =
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            binding.imageVisibility.setImageResource(R.drawable.visibility_off)
+        }
+        binding.editPwd.setSelection(binding.editPwd.text.length)
+    }
+
+    private fun updateUi(isLogin: Boolean) {
+
+        binding.apply {
+
+            btnLogout.visibility = if (isLogin) View.VISIBLE else View.GONE
+            btnStartTalk.visibility = if (isLogin) View.VISIBLE else View.GONE
+            tvLoginInfo.visibility = if (isLogin) View.VISIBLE else View.GONE
+
+            btnLogin.visibility = if (isLogin) View.GONE else View.VISIBLE
+            btnRegister.visibility = if (isLogin) View.GONE else View.VISIBLE
+            editEmail.visibility = if (isLogin) View.GONE else View.VISIBLE
+            editPwd.visibility = if (isLogin) View.GONE else View.VISIBLE
+            imageVisibility.visibility = if (isLogin) View.GONE else View.VISIBLE
+        }
+    }
+
+    private fun setToolbar() {
+        (requireActivity() as AppCompatActivity).supportActionBar?.show()
+        (requireActivity() as AppCompatActivity).supportActionBar?.title = getString(R.string.app_name)
+        (requireActivity() as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(false)
+    }
+
     /**
      * 뷰 클릭 이벤트를 처리한다
      *
@@ -299,24 +355,16 @@ class LogInFragment : Fragment(), View.OnClickListener {
 //            }
 
             R.id.image_visibility -> {
-                var isVisible = false
-                binding.imageVisibility.setOnClickListener {
-                    isVisible = !isVisible
-                    if (isVisible) {
-                        binding.editPwd.inputType =
-                            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                        binding.imageVisibility.setImageResource(R.drawable.visibility)
-                    } else {
-                        binding.editPwd.inputType =
-                            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-                        binding.imageVisibility.setImageResource(R.drawable.visibility_off)
-                    }
-                    binding.editPwd.setSelection(binding.editPwd.text.length)
-                }
+                toggleVisibility()
             }
 
+            R.id.btn_logout -> {
+                FirebaseManager.logout()
+            }
 
-            else -> null
+            R.id.btn_start_talk -> {
+                findNavController().navigate(R.id.action_to_UserList)
+            }
         }
     }
 }
