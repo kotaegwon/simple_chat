@@ -3,9 +3,10 @@
     <string name="edit_email">이메일을 입력하세요</string>
     <string name="edit_pwd">비밀번호를 입력하세요</string>
     <string name="edit_email_pwd">이메일, 비밀번호를 입력하세요</string>
-    <string name="btn_login">로그인</string>
-    <string name="btn_register">회원가입</string>
-    <string name="btn_google">구글 로그인</string>
+    <string name="login">로그인</string>
+    <string name="logout">로그아웃</string>
+    <string name="register">회원가입</string>
+    <string name="google_login">구글 로그인</string>
     <string name="login_success">로그인 성공</string>
     <string name="login_fail">로그인 실패</string>
     <string name="email_not_verified">이메일 인증이 필요합니다</string>
@@ -18,4 +19,7 @@
     <string name="google_login_success">구글 로그인 성공</string>
     <string name="btn_dialog_cancel">취소</string>
     <string name="btn_dialog_okay">확인</string>
+    <string name="search">검색</string>
+    <string name="start_talk">채팅 시작하기</string>
+
 </resources>

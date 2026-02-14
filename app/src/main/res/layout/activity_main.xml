@@ -19,6 +19,7 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@color/orange"
             android:fitsSystemWindows="true"
+            app:menu="@menu/menu_toolbar"
             app:titleTextColor="@color/white" />
 
         <include layout="@layout/content_main" />
