@@ -22,7 +22,7 @@ import com.ko.simple_chat.R
  * Firebase Authentication에 등록된 사용자 목록을 표시한다
  * 사용자를 선택하면 채팅방으로 이동한다
  */
-class UserListFragment : Fragment(), UserListAdapter.Listner {
+class UserListFragment : Fragment(), UserListAdapter.Listener {
 
     // ViewBinding
     private var _binding: FragmentUserListBinding? = null
