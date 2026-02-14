@@ -12,36 +12,80 @@ import com.google.firebase.storage.storage
 import com.ko.simple_chat.model.Chat
 import com.ko.simple_chat.model.User
 
+/**
+ * Firebase 인증, 데이터베이스, 스토리지 관리
+ *
+ * 로그인, 회원가입, 로그아웃, 사용자 정보 가져오기
+ * 방 만들기, 메시지 송신, 메시지 수신
+ */
 object FirebaseManager {
+
+    // Firebase 인증 객체
     lateinit var auth: FirebaseAuth
         private set
 
+    // Firebase DB 객체
     lateinit var db: FirebaseFirestore
         private set
 
+    // FirebaseStorage 객체
     lateinit var storage: FirebaseStorage
         private set
 
+
+    /**
+     * Firebase 초기화
+     *
+     * 반드시 앱 시작 시 1회 호출 필요
+     */
     fun init() {
         auth = Firebase.auth
         db = FirebaseFirestore.getInstance()
         storage = Firebase.storage
     }
 
+    /**
+     * 로그인 상태 확인
+     *
+     * @return 로그인 상태 여부
+     */
     fun isLogin(): Boolean {
         return auth.currentUser != null
     }
 
+    /**
+     * 로그아웃
+     */
+    fun logout() {
+        auth.signOut()
+    }
+
+    /**
+     * 이메일 확인
+     *
+     * @return 이메일 확인 여부
+     */
     fun getUserEmail(): String? {
         return auth.currentUser?.email
     }
 
+    /**
+     * 이메일 인증 확인
+     *
+     * @return 이메일 인증 여부
+     */
     fun isEmailVerified(): Boolean {
         return auth.currentUser?.isEmailVerified == true
     }
 
     /**
      * 회원 가입
+     *
+     * @param email 이메일
+     * @param pwd 비밀번호
+     * @param name 이름
+     *
+     * @return onResult 완료 콜백(성공 여부, 에러 메시지)
      */
     fun register(email: String, pwd: String, name: String, onResult: (Boolean, String?) -> Unit) {
         auth.createUserWithEmailAndPassword(email, pwd)
@@ -62,7 +106,11 @@ object FirebaseManager {
     }
 
     /**
-     * 사용자 정보 저장
+     * Firestore에 사용자 정보 저장
+     *
+     * @param firebaseUser Firebase 사용자 정보
+     * @param email 이메일
+     * @param name 이름
      */
     private fun saveUserToFireStore(firebaseUser: FirebaseUser?, email: String, name: String) {
         firebaseUser ?: return
@@ -80,6 +128,8 @@ object FirebaseManager {
 
     /**
      * 로그인 성공 후 DB에서 정보 가져오기
+     *
+     * @param onResult 완료 콜백(사용자 정보)
      */
     fun loadMyUserInfo(onResult: (User?) -> Unit) {
         val uid = auth.currentUser?.uid ?: return
@@ -132,6 +182,8 @@ object FirebaseManager {
 
     /**
      * 전체 유저 목록 가져오기
+     *
+     * @param onResult 완료 콜백(사용자 목록)
      */
     fun loadUserList(onResult: (List<User>) -> Unit) {
         db.collection("users")
@@ -151,6 +203,11 @@ object FirebaseManager {
 
     /**
      * 두 사람 uid로 방 만들기
+     *
+     * @param myUid 내 uid
+     * @param otherUid 상대방 uid
+     *
+     * @return 방 uid
      */
     fun makeRoom(myUid: String, otherUid: String): String {
         return if (myUid < otherUid) {
@@ -162,6 +219,10 @@ object FirebaseManager {
 
     /**
      * 메시지 송신
+     *
+     * @param otherUid 상대방 uid
+     * @param message 메시지
+     * @param onResult 완료 콜백(성공 여부)
      */
     fun sendMessage(otherUid: String, message: String, onResult: (Boolean) -> Unit) {
 
@@ -175,18 +236,29 @@ object FirebaseManager {
             time = System.currentTimeMillis()
         )
 
+        // Firestore에서 'chatRooms' 컬렉션 내 방 ID(roomUid)에 해당하는 문서 참조 생성
         val roomRef = db.collection("chatRooms").document(roomUid)
 
-        // 방 정보 갱신
+        /**
+         * 방 정보
+         *
+         * users: 두 사용자의 uid
+         * lastMessage: 마지막 메시지
+         * updateAt: 마지막 메시지 전송 시간(정렬, 최신 순 표시용)
+         */
         val roomData = hashMapOf(
             "users" to listOf(myUid, otherUid),
             "lastMessage" to message,
             "updateAt" to chat.time
         )
 
+        /**
+         * 방이 없으면 생성
+         * 방이 있으면 업데이트
+         */
         roomRef.set(roomData)
 
-        // 메시지 저장
+        // messages 컬렉션 안에 메시지 저장
         roomRef.collection("messages")
             .add(chat)
             .addOnSuccessListener {
@@ -198,6 +270,9 @@ object FirebaseManager {
 
     /**
      * 메시지 수신
+     *
+     * @param otherUid 상대방 uid
+     * @param onResult 완료 콜백(메시지 목록)
      */
 
     fun listenMessage(otherUid: String, onResult: (List<Chat>) -> Unit) {
