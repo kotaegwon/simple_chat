@@ -123,7 +123,7 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         fun bind(chat: Chat) {
             Timber.d("ReceiveViewHolder bind : $chat")
-            binding.tvTime.text = Utils.formatTIme(System.currentTimeMillis())
+            binding.tvTime.text = Utils.formatTIme(chat.time)
             binding.tvMessage.text = chat.message
         }
     }

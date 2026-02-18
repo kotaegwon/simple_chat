@@ -23,8 +23,10 @@ import com.google.android.gms.common.api.ApiException
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.ko.simple_chat.R
+import com.ko.simple_chat.databinding.DialogRegisterBinding
 import com.ko.simple_chat.databinding.FragmentLoginBinding
 import com.ko.simple_chat.firebase.FirebaseManager
+import com.ko.simple_chat.firebase.LoginResult
 import kotlin.getValue
 
 /**
@@ -140,29 +142,27 @@ class LogInFragment : Fragment(), View.OnClickListener {
      * @return 로그인 성공 시 true, 실패 시 false
      */
     private fun login(email: String, pwd: String) {
-        FirebaseManager.auth
-            .signInWithEmailAndPassword(email, pwd)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
+        FirebaseManager.login(email, pwd) { result ->
+            when (result) {
+                is LoginResult.Success -> {
+                    toast(getString(R.string.login_completed, result.user.name))
 
-                    // 이메일 인증 확인
-                    if (FirebaseManager.isEmailVerified()) {
-                        FirebaseManager.loadMyUserInfo { user ->
-                            if (user != null) {
-                                toast("환영합니다 ${user.email}")
+                    findNavController().navigate(R.id.action_to_UserList)
+                }
 
-                                findNavController().navigate(R.id.action_to_UserList)
-                            } else {
-                                toast(R.string.none_user)
-                            }
-                        }
-                    } else {
-                        toast(R.string.email_not_verified)
-                    }
-                } else {
+                is LoginResult.NotVerified -> {
+                    toast(R.string.email_not_verified)
+                }
+
+                is LoginResult.NoneUser -> {
+                    toast(R.string.none_user)
+                }
+
+                is LoginResult.Fail -> {
                     toast(R.string.login_fail)
                 }
             }
+        }
     }
 
     /**
@@ -230,17 +230,18 @@ class LogInFragment : Fragment(), View.OnClickListener {
      * 회원가입 성공 시 UserListFragment로 이동한다
      */
     fun showRegisterDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_register, null)
+        val binding = DialogRegisterBinding.inflate(layoutInflater)
+
         val dialog = AlertDialog.Builder(requireContext())
-            .setView(dialogView)
+            .setView(binding.root)
             .create()
 
-        val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btn_dialog_cancel)
-        val btnOkay = dialogView.findViewById<MaterialButton>(R.id.btn_dialog_okay)
-        val editEmail = dialogView.findViewById<EditText>(R.id.edit_register_email)
-        val editPwd = dialogView.findViewById<EditText>(R.id.edit_register_pwd)
-        val editName = dialogView.findViewById<EditText>(R.id.edit_register_name)
-        val imageVisibility = dialogView.findViewById<ImageView>(R.id.image_visibility)
+        val editEmil = binding.editRegisterEmail
+        val editPwd = binding.editRegisterPwd
+        val editName = binding.editRegisterName
+        val imageVisibility = binding.imageVisibility
+        val btnCancel = binding.btnDialogCancel
+        val btnOkay = binding.btnDialogOkay
 
         var isVisible = false
         imageVisibility.setOnClickListener {
@@ -248,14 +249,14 @@ class LogInFragment : Fragment(), View.OnClickListener {
             if (isVisible) {
                 editPwd.inputType =
                     InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                imageVisibility.setImageResource(R.drawable.visibility)
+                binding.imageVisibility.setImageResource(R.drawable.visibility)
             } else {
                 editPwd.inputType =
                     InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-                imageVisibility.setImageResource(R.drawable.visibility_off)
+                binding.imageVisibility.setImageResource(R.drawable.visibility_off)
             }
             // 커서 끝으로 이동
-            editPwd.setSelection(editPwd.text.length)
+            editPwd.setSelection(binding.editRegisterPwd.text.length)
         }
 
         btnCancel.setOnClickListener {
@@ -263,7 +264,7 @@ class LogInFragment : Fragment(), View.OnClickListener {
         }
 
         btnOkay.setOnClickListener {
-            val email = editEmail.text.toString().trim()
+            val email = editEmil.text.toString().trim()
             val pwd = editPwd.text.toString().trim()
             val name = editName.text.toString().trim()
 
@@ -280,13 +281,11 @@ class LogInFragment : Fragment(), View.OnClickListener {
 
                 else -> register(email, pwd, name)
             }
-
-
-
             dialog.dismiss()
         }
         dialog.show()
     }
+
 
     private fun toggleVisibility() {
         isVisible = !isVisible
@@ -321,7 +320,8 @@ class LogInFragment : Fragment(), View.OnClickListener {
 
     private fun setToolbar() {
         (requireActivity() as AppCompatActivity).supportActionBar?.show()
-        (requireActivity() as AppCompatActivity).supportActionBar?.title = getString(R.string.app_name)
+        (requireActivity() as AppCompatActivity).supportActionBar?.title =
+            getString(R.string.app_name)
         (requireActivity() as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(false)
     }
 

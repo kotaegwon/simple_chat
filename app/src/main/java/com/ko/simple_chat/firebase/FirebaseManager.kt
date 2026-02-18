@@ -53,12 +53,6 @@ object FirebaseManager {
         return auth.currentUser != null
     }
 
-    /**
-     * 로그아웃
-     */
-    fun logout() {
-        auth.signOut()
-    }
 
     /**
      * 이메일 확인
@@ -79,6 +73,46 @@ object FirebaseManager {
     }
 
     /**
+     * 로그인
+     *
+     * @param email 이메일
+     * @param pwd 비밀번호
+     * @param onResult 완료 콜백(로그인 결과)
+     */
+    fun login(email: String, pwd: String, onResult: (LoginResult) -> Unit) {
+        auth.signInWithEmailAndPassword(email, pwd)
+            .addOnCompleteListener { task ->
+                // 로그인 요청 실패 처리
+                if (!task.isSuccessful) {
+                    onResult(LoginResult.Fail)
+                    return@addOnCompleteListener
+                }
+
+                // 이메일 인증 여부 확인
+                if (!isEmailVerified()) {
+                    onResult(LoginResult.NotVerified)
+                    return@addOnCompleteListener
+                }
+
+                // 로그인 성공 후 사용자 정보 조회
+                loadMyUserInfo { user ->
+                    if (user != null) {
+                        onResult(LoginResult.Success(user))
+                    } else {
+                        onResult(LoginResult.NoneUser)
+                    }
+                }
+            }
+    }
+
+    /**
+     * 로그아웃
+     */
+    fun logout() {
+        auth.signOut()
+    }
+
+    /**
      * 회원 가입
      *
      * @param email 이메일
@@ -87,7 +121,12 @@ object FirebaseManager {
      *
      * @return onResult 완료 콜백(성공 여부, 에러 메시지)
      */
-    fun register(email: String, pwd: String, name: String, onResult: (Boolean, String?) -> Unit) {
+    fun register(
+        email: String,
+        pwd: String,
+        name: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
         auth.createUserWithEmailAndPassword(email, pwd)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -146,7 +185,10 @@ object FirebaseManager {
     /**
      * 구글 로그인
      */
-    fun firebaseAuthWithGoogle(account: GoogleSignInAccount, onResult: (Boolean, String?) -> Unit) {
+    fun firebaseAuthWithGoogle(
+        account: GoogleSignInAccount,
+        onResult: (Boolean, String?) -> Unit
+    ) {
         val credential = GoogleAuthProvider.getCredential(account.idToken, null)
 
         auth.signInWithCredential(credential)
@@ -269,7 +311,7 @@ object FirebaseManager {
     }
 
     /**
-     * 메시지 수신
+     * 채팅 메시지 실시간 동기화
      *
      * @param otherUid 상대방 uid
      * @param onResult 완료 콜백(메시지 목록)
