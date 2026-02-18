@@ -12,6 +12,7 @@ import com.ko.simple_chat.firebase.FirebaseManager
 import com.ko.simple_chat.model.User
 import timber.log.Timber
 import com.ko.simple_chat.R
+import com.ko.simple_chat.adapter.RecyclerViewDecoration
 
 
 /**
@@ -22,7 +23,7 @@ import com.ko.simple_chat.R
 class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserListAdapter.Listener {
 
     // RecyclerView Adapter
-    private lateinit var adapter: UserListAdapter
+    private lateinit var userListadapter: UserListAdapter
 
     override fun inflateBinding(
         inflater: LayoutInflater,
@@ -43,7 +44,7 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
     }
 
     override fun submitList(list: List<User>) {
-        adapter.submitList(list)
+        userListadapter.submitList(list)
     }
 
     /**
@@ -58,13 +59,20 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
 
         super.onViewCreated(view, savedInstanceState)
 
-        // RecyclerView 레이아웃 매니저 설정
-        val layoutManager = LinearLayoutManager(requireContext())
-        binding.userRecyclerview.layoutManager = layoutManager
-
         // Adapter 연결
-        adapter = UserListAdapter(this)
-        binding.userRecyclerview.adapter = adapter
+        userListadapter = UserListAdapter(this)
+
+        binding.userRecyclerview.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = userListadapter
+            addItemDecoration(
+                RecyclerViewDecoration(
+                    requireContext(),
+                    0,
+                    1
+                )
+            )
+        }
 
         // Firebase에서 사용자 목록을 가져와서 Adapter에 전달
         FirebaseManager.loadUserList { list ->

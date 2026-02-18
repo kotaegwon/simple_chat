@@ -5,9 +5,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ko.simple_chat.R
@@ -30,7 +27,7 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, Chat>(), View.OnC
 
 
     // RecyclerView Adapter
-    private lateinit var adapter: ChatRoomAdapter
+    private lateinit var chatAdapter: ChatRoomAdapter
     var user: User? = null
 
 
@@ -68,7 +65,7 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, Chat>(), View.OnC
             }
         }
 
-        adapter.submitList(uiList)
+        chatAdapter.submitList(uiList)
 
         binding.mainRecyclerview.scrollToPosition(uiList.size - 1)
     }
@@ -84,12 +81,12 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, Chat>(), View.OnC
 
         setUpMenu()
 
-        adapter = ChatRoomAdapter()
+        chatAdapter = ChatRoomAdapter()
 
-        val layoutManager = LinearLayoutManager(requireContext())
-        binding.mainRecyclerview.layoutManager = layoutManager
-        binding.mainRecyclerview.adapter = adapter
-
+        binding.mainRecyclerview.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = chatAdapter
+        }
 
         user = getArgument()
 
@@ -157,7 +154,7 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, Chat>(), View.OnC
         testList.add(ChatTypeItem.Send(sendData))
         testList.add(ChatTypeItem.Receive(receive))
 
-        adapter.submitList(testList)
+        chatAdapter.submitList(testList)
     }
 
     override fun onClick(v: View?) {
