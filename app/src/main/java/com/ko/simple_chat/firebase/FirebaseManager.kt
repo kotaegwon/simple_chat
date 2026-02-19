@@ -175,12 +175,12 @@ object FirebaseManager {
 
         db.collection("users")
             .document(uid)
-            .get()
-            .addOnSuccessListener {
-                val user = it.toObject(User::class.java)
+            .addSnapshotListener { snapshot, _ ->
+                val user = snapshot?.toObject(User::class.java)
                 onResult(user)
             }
     }
+
 
     /**
      * 구글 로그인
@@ -229,19 +229,16 @@ object FirebaseManager {
      */
     fun loadUserList(onResult: (List<User>) -> Unit) {
         db.collection("users")
-            .get()
-            .addOnSuccessListener { result ->
-                val list = mutableListOf<User>()
+            .addSnapshotListener { snapshot, _ ->
 
-                for (document in result) {
-                    val user = document.toObject(User::class.java)
-                    list.add(user)
-                }
+                val list = snapshot?.documents
+                    ?.mapNotNull { it.toObject(User::class.java) }
+                    ?.filter { it.uid != auth.currentUser?.uid }
+                    ?: emptyList()
 
                 onResult(list)
             }
     }
-
 
     /**
      * 두 사람 uid로 방 만들기
