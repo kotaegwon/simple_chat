@@ -13,14 +13,18 @@
         android:fitsSystemWindows="true"
         android:orientation="vertical">
 
-        <androidx.appcompat.widget.Toolbar
+        <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@color/orange"
-            android:fitsSystemWindows="true"
-            app:menu="@menu/menu_toolbar"
-            app:titleTextColor="@color/white" />
+            app:titleTextColor="@color/white"
+            app:navigationIconTint="@color/white"
+            app:itemIconTint="@color/white"
+            app:menu="@menu/menu_toolbar" />
+
+
+
 
         <include layout="@layout/content_main" />
     </LinearLayout>

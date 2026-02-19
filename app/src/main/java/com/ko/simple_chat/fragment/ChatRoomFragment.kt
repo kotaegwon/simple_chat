@@ -79,7 +79,6 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, Chat>(), View.OnC
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setUpMenu()
 
         chatAdapter = ChatRoomAdapter()
 
@@ -101,16 +100,22 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, Chat>(), View.OnC
 
         // 특정 id의 채팅 내역을 listenChat으로 관찰
         chatViewModel.chatList.observe(viewLifecycleOwner) { list ->
-            originList.clear()
-            originList.addAll(list)
+            originList.apply {
+                clear()
+                addAll(list)
+            }
 
-            filterList.clear()
-            filterList.addAll(list)
-
+            filterList.apply {
+                clear()
+                addAll(list)
+            }
             submitList(list)
 
             binding.mainRecyclerview.scrollToPosition(list.size - 1)
         }
+
+        setUpMenu()
+
     }
 
     /**

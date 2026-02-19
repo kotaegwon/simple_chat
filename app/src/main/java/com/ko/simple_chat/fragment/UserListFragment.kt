@@ -64,7 +64,6 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
 
         super.onViewCreated(view, savedInstanceState)
 
-        setUpMenu()
 
         // Adapter 연결
         userListAdapter = UserListAdapter(this)
@@ -112,6 +111,8 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
                     })
             }
         }
+
+        setUpMenu()
 
         Timber.d("onViewCreated -")
 

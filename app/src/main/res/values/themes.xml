@@ -3,6 +3,9 @@
     <style name="Base.Theme.Simple_chat" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <item name="colorPrimary">@color/orange</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorControlNormal">@color/white</item>
+
     </style>
 
     <style name="Theme.Simple_chat" parent="Base.Theme.Simple_chat" />

@@ -7,15 +7,14 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.SearchView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.viewbinding.ViewBinding
 import com.ko.simple_chat.R
-import com.ko.simple_chat.model.Chat
 
 abstract class BaseFragment<VB : ViewBinding, T> : Fragment() {
 
