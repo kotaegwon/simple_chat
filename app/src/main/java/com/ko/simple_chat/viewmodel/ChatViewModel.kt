@@ -14,7 +14,7 @@ import com.ko.simple_chat.model.Chat
 class ChatViewModel : ViewModel() {
 
     private val _chatList = MutableLiveData<List<Chat>>()
-    val chatList: LiveData<List<Chat>> = _chatList
+    val chatList: LiveData<List<Chat>> get() = _chatList
 
 
     /**

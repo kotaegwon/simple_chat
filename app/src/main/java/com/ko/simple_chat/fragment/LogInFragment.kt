@@ -6,27 +6,26 @@ import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.ko.simple_chat.R
 import com.ko.simple_chat.databinding.DialogRegisterBinding
 import com.ko.simple_chat.databinding.FragmentLoginBinding
 import com.ko.simple_chat.firebase.FirebaseManager
 import com.ko.simple_chat.firebase.LoginResult
+import com.ko.simple_chat.viewmodel.LogInViewModel
+import timber.log.Timber
 import kotlin.getValue
 
 /**
@@ -39,6 +38,8 @@ class LogInFragment : Fragment(), View.OnClickListener {
     // ViewBinding
     private var _binding: FragmentLoginBinding? = null
     private val binding get() = _binding!!
+
+    private val logInViewModel: LogInViewModel by viewModels()
 
     private lateinit var googleSignInClient: GoogleSignInClient
 
@@ -103,10 +104,25 @@ class LogInFragment : Fragment(), View.OnClickListener {
 //        binding.btnGoogle.setOnClickListener(this)
 
         authListener = FirebaseAuth.AuthStateListener { auth ->
+
             if (auth.currentUser == null) {
+                logInViewModel.clearMyInfo()
                 updateUi(false)
             } else {
+                logInViewModel.loadMyUserInfo()
                 updateUi(true)
+            }
+        }
+
+        logInViewModel.myInfo.observe(viewLifecycleOwner) { user ->
+            user?.let {
+                Timber.d("user: $user")
+
+                binding.tvLoginInfo.text = getString(
+                    R.string.login_info,
+                    user.name,
+                    user.email
+                )
             }
         }
     }
@@ -146,7 +162,6 @@ class LogInFragment : Fragment(), View.OnClickListener {
             when (result) {
                 is LoginResult.Success -> {
                     toast(getString(R.string.login_completed, result.user.name))
-
                     findNavController().navigate(R.id.action_to_UserList)
                 }
 
@@ -320,8 +335,7 @@ class LogInFragment : Fragment(), View.OnClickListener {
 
     private fun setToolbar() {
         (requireActivity() as AppCompatActivity).supportActionBar?.show()
-        (requireActivity() as AppCompatActivity).supportActionBar?.title =
-            getString(R.string.app_name)
+        (requireActivity() as AppCompatActivity).supportActionBar?.title = getString(R.string.app_name)
         (requireActivity() as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(false)
     }
 
