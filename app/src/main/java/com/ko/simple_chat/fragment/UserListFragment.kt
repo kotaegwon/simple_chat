@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ko.simple_chat.adapter.UserListAdapter
@@ -13,6 +14,7 @@ import com.ko.simple_chat.model.User
 import timber.log.Timber
 import com.ko.simple_chat.R
 import com.ko.simple_chat.adapter.RecyclerViewDecoration
+import com.ko.simple_chat.viewmodel.UserListViewModel
 
 
 /**
@@ -23,7 +25,10 @@ import com.ko.simple_chat.adapter.RecyclerViewDecoration
 class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserListAdapter.Listener {
 
     // RecyclerView Adapter
-    private lateinit var userListadapter: UserListAdapter
+    private lateinit var userListAdapter: UserListAdapter
+    private var mySelf: User? = null
+
+    private val userListViewModel : UserListViewModel by viewModels()
 
     override fun inflateBinding(
         inflater: LayoutInflater,
@@ -44,7 +49,7 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
     }
 
     override fun submitList(list: List<User>) {
-        userListadapter.submitList(list)
+        userListAdapter.submitList(list)
     }
 
     /**
@@ -59,12 +64,14 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
 
         super.onViewCreated(view, savedInstanceState)
 
+        setUpMenu()
+
         // Adapter 연결
-        userListadapter = UserListAdapter(this)
+        userListAdapter = UserListAdapter(this)
 
         binding.userRecyclerview.apply {
             layoutManager = LinearLayoutManager(requireContext())
-            adapter = userListadapter
+            adapter = userListAdapter
             addItemDecoration(
                 RecyclerViewDecoration(
                     requireContext(),
@@ -75,22 +82,36 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
         }
 
         // Firebase에서 사용자 목록을 가져와서 Adapter에 전달
-        FirebaseManager.loadUserList { list ->
-            originList.clear()
-            originList.addAll(list)
+        userListViewModel.userList.observe(viewLifecycleOwner){ list ->
+            originList.apply {
+                clear()
+                addAll(list)
+            }
 
-            filterList.clear()
-            filterList.addAll(list)
+            filterList.apply {
+                clear()
+                addAll(list)
+            }
 
-            submitList(filterList.toList())
+            submitList(filterList)
         }
 
         //Firebase에서 사용자 정보를 가져와서 Toolbar에 표시
-        FirebaseManager.loadMyUserInfo { user ->
-            setToolbar(true, user!!.name, true)
+        userListViewModel.myInfo.observe(viewLifecycleOwner){ user ->
+            setToolbar(true, getString(R.string.app_name), true)
+            mySelf = user
+            binding.tvMyself.text = user?.name
         }
 
-        setUpMenu()
+        binding.tvMyself.setOnClickListener {
+            mySelf?.let {
+                findNavController().navigate(
+                    R.id.action_to_ChatRoom,
+                    Bundle().apply {
+                        putParcelable("user_info", it)
+                    })
+            }
+        }
 
         Timber.d("onViewCreated -")
 
