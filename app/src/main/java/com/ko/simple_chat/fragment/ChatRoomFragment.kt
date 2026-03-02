@@ -12,7 +12,7 @@ import com.ko.simple_chat.adapter.ChatRoomAdapter
 import com.ko.simple_chat.adapter.ChatTypeItem
 import com.ko.simple_chat.databinding.FragmentChatRoomBinding
 import com.ko.simple_chat.firebase.FirebaseManager
-import com.ko.simple_chat.model.Chat
+import com.ko.simple_chat.model.ChatRoom
 import com.ko.simple_chat.model.User
 import com.ko.simple_chat.viewmodel.ChatViewModel
 
@@ -23,7 +23,7 @@ import com.ko.simple_chat.viewmodel.ChatViewModel
  * 송신 메시지와 수신 메시지를 표시한다
  * 송신 버튼을 누르면 메시지를 전송한다
  */
-class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, Chat>(), View.OnClickListener {
+class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, ChatRoom>(), View.OnClickListener {
 
 
     // RecyclerView Adapter
@@ -47,7 +47,7 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, Chat>(), View.OnC
     }
 
     override fun match(
-        item: Chat,
+        item: ChatRoom,
         keyword: String
     ): Boolean {
         return item.message
@@ -55,7 +55,7 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, Chat>(), View.OnC
             .contains(keyword)
     }
 
-    override fun submitList(list: List<Chat>) {
+    override fun submitList(list: List<ChatRoom>) {
 
         val uiList = list.map {
             if (it.myUid == myUid) {
@@ -142,14 +142,14 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, Chat>(), View.OnC
      */
     private fun uiAdapterTest() {
         val testList = mutableListOf<ChatTypeItem>()
-        val sendData = Chat(
+        val sendData = ChatRoom(
             myUid = "0",
             name = "고태권",
             message = "안녕하세요",
             time = System.currentTimeMillis()
         )
 
-        val receive = Chat(
+        val receive = ChatRoom(
             myUid = "1",
             name = "고태권",
             message = "안녕하세요",

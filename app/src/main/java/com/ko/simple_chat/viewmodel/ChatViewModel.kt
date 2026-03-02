@@ -4,7 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.ko.simple_chat.firebase.FirebaseManager
-import com.ko.simple_chat.model.Chat
+import com.ko.simple_chat.model.ChatRoom
 
 /**
  * 채팅 ViewModel
@@ -13,8 +13,8 @@ import com.ko.simple_chat.model.Chat
  */
 class ChatViewModel : ViewModel() {
 
-    private val _chatList = MutableLiveData<List<Chat>>()
-    val chatList: LiveData<List<Chat>> get() = _chatList
+    private val _chatList = MutableLiveData<List<ChatRoom>>()
+    val chatList: LiveData<List<ChatRoom>> get() = _chatList
 
 
     /**

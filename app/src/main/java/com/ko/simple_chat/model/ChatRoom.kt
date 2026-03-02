@@ -11,7 +11,7 @@ package com.ko.simple_chat.model
  * @param read 메시지 읽음 여부
  *
  */
-data class Chat(
+data class ChatRoom(
     val myUid: String = "",
     val otherUid: String = "",
     val name: String = "",

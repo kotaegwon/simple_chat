@@ -3,16 +3,21 @@ package com.ko.simple_chat.adapter
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.ko.simple_chat.Utils.Utils
 import com.ko.simple_chat.databinding.ChatListItemBinding
-import com.ko.simple_chat.model.Chat
+import com.ko.simple_chat.model.ChatListItem
 
-class ChatListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    val itemList = mutableListOf<Chat>()
+class ChatListAdapter(val listener: Listener) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    val itemList = mutableListOf<ChatListItem>()
+
+    interface Listener {
+        fun onItemClicked(chat: ChatListItem)
+    }
 
     /**
      * 새로운 데이터를 Adapter에 전달하는 함수
      */
-    fun submitList(items: List<Chat>) {
+    fun submitList(items: List<ChatListItem>) {
         itemList.clear()
         itemList.addAll(items)
         notifyDataSetChanged()
@@ -34,6 +39,10 @@ class ChatListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     ) {
         val chat = itemList[position]
         (holder as ChatViewHolder).bind(chat)
+
+        holder.itemView.setOnClickListener {
+            listener.onItemClicked(chat)
+        }
     }
 
     override fun getItemCount(): Int {
@@ -41,10 +50,10 @@ class ChatListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     }
 
     class ChatViewHolder(val binding: ChatListItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(chat: Chat) {
-            binding.tvUser.text = chat.name
-            binding.tvLastMessage.text = chat.message
-            binding.tvLastTime.text = chat.time.toString()
+        fun bind(chat: ChatListItem) {
+            binding.tvUser.text = chat.otherName
+            binding.tvLastMessage.text = chat.lastMessage
+            binding.tvLastTime.text = Utils.formatTImeY(chat.updateAt)
         }
     }
 }

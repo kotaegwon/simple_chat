@@ -13,4 +13,12 @@ object Utils {
 
         return format.format(data)
     }
+
+    fun formatTImeY(millis: Long): String {
+        val data = Date(millis)
+
+        val format = SimpleDateFormat("yyyy MM dd a h:mm", Locale.KOREA)
+
+        return format.format(data)
+    }
 }

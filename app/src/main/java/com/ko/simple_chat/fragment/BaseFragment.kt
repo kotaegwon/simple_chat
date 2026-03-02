@@ -72,16 +72,6 @@ abstract class BaseFragment<VB : ViewBinding, T> : Fragment() {
     }
 
     /* ===========================+
-        Bottom Navigation Setting
-     =============================*/
-    protected fun setBotNavigation(showBack: Boolean) {
-        val botNav =
-            (requireActivity() as MainActivity).findViewById<BottomNavigationView>(R.id.bottom_navigation)
-
-        botNav.visibility = if (showBack) View.VISIBLE else View.GONE
-    }
-
-    /* ===========================+
         Toolbar search
      =============================*/
 

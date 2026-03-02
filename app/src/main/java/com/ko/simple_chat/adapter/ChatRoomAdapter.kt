@@ -6,7 +6,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.ko.simple_chat.Utils.Utils
 import com.ko.simple_chat.databinding.ReceiveItemBinding
 import com.ko.simple_chat.databinding.SendItemBinding
-import com.ko.simple_chat.model.Chat
+import com.ko.simple_chat.model.ChatRoom
 import timber.log.Timber
 
 /**
@@ -106,7 +106,7 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
      */
     class SendViewHolder(val binding: SendItemBinding) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(chat: Chat) {
+        fun bind(chat: ChatRoom) {
             Timber.d("SendViewHolder bind : $chat")
             binding.tvTime.text = Utils.formatTIme(chat.time)
             binding.tvMessage.text = chat.message
@@ -121,7 +121,7 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     class ReceiveViewHolder(val binding: ReceiveItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(chat: Chat) {
+        fun bind(chat: ChatRoom) {
             Timber.d("ReceiveViewHolder bind : $chat")
             binding.tvTime.text = Utils.formatTIme(chat.time)
             binding.tvMessage.text = chat.message

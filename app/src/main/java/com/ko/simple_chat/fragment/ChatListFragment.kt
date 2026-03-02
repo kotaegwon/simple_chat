@@ -5,17 +5,27 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.firebase.firestore.util.Util
+import com.ko.simple_chat.R
+import com.ko.simple_chat.Utils.Utils
 import com.ko.simple_chat.adapter.ChatListAdapter
 import com.ko.simple_chat.adapter.RecyclerViewDecoration
 import com.ko.simple_chat.databinding.FragmentChatListBinding
-import com.ko.simple_chat.model.Chat
+import com.ko.simple_chat.model.ChatListItem
+import com.ko.simple_chat.model.ChatRoom
+import com.ko.simple_chat.model.User
 import com.ko.simple_chat.viewmodel.ChatListViewModel
+import timber.log.Timber
 
-class ChatListFragment : BaseFragment<FragmentChatListBinding, Chat>() {
+class ChatListFragment : BaseFragment<FragmentChatListBinding, ChatListItem>(),
+    ChatListAdapter.Listener {
     private lateinit var chatListAdapter: ChatListAdapter
 
     val viewModel: ChatListViewModel by viewModels()
+
+    var myInfo: User? = null
 
     override fun inflateBinding(
         inflater: LayoutInflater,
@@ -26,23 +36,21 @@ class ChatListFragment : BaseFragment<FragmentChatListBinding, Chat>() {
     }
 
     override fun match(
-        item: Chat,
+        item: ChatListItem,
         keyword: String
     ): Boolean {
-
-        return item.name
-            .lowercase()
-            .contains(keyword)
+        return item.otherName.lowercase().contains(keyword) ||
+                item.lastMessage.lowercase().contains(keyword)
     }
 
-    override fun submitList(list: List<Chat>) {
+    override fun submitList(list: List<ChatListItem>) {
         chatListAdapter.submitList(list)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        chatListAdapter = ChatListAdapter()
+        chatListAdapter = ChatListAdapter(this)
 
         binding.chatListRecyclerview.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -70,15 +78,48 @@ class ChatListFragment : BaseFragment<FragmentChatListBinding, Chat>() {
             submitList(list)
 
             binding.chatListRecyclerview.scrollToPosition(list.size - 1)
-
-            setUpMenu()
         }
 
-        val list = listOf(
-            Chat("1", "2", "고태권", "안녕하세요", System.currentTimeMillis()),
-            Chat("1", "2", "김", "안녕하세요", System.currentTimeMillis())
+        viewModel.myChat.observe(viewLifecycleOwner) { item ->
+            binding.tvMyChat.tvUser.text = item.otherName
+            binding.tvMyChat.tvLastMessage.text = item.lastMessage
+            binding.tvMyChat.tvLastTime.text = Utils.formatTImeY(item.updateAt)
+
+            myInfo = User(
+                name = item.otherName,
+                uid = item.otherUid,
+                email = "",
+                createAt = item.updateAt
+            )
+        }
+
+        binding.tvMyChat.root.setOnClickListener {
+            myInfo?.let {
+                findNavController().navigate(
+                    R.id.action_to_ChatRoom,
+                    Bundle().apply {
+                        putParcelable("user_info", it)
+                    })
+            }
+        }
+
+        setUpMenu()
+        setToolbar(true, getString(R.string.app_name), true)
+    }
+
+    override fun onItemClicked(chat: ChatListItem) {
+        val user = User(
+            name = chat.otherName,
+            uid = chat.otherUid,
+            email = "",
+            createAt = chat.updateAt
         )
 
-        chatListAdapter.submitList(list)
+        findNavController().navigate(
+            R.id.action_to_ChatRoom,
+            Bundle().apply {
+                putParcelable("user_info", user)
+            })
+        Timber.d("onItemClick: $user")
     }
 }

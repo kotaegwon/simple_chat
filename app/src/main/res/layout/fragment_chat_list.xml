@@ -5,30 +5,24 @@
     android:layout_height="match_parent"
     android:background="@color/white">
 
-    <TextView
-        android:id="@+id/tv_myself_title"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:layout_marginTop="10dp"
-        android:text="@string/myself"
-        android:textColor="@color/black"
+    <include
+        android:id="@+id/tv_myChat"
+        layout="@layout/chat_list_item"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/tv_myself"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:paddingVertical="16dp"
-        android:paddingStart="8dp"
-        android:textColor="@color/orange"
-        android:textSize="30sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_myself_title" />
+    <!--    <TextView-->
+    <!--        android:id="@+id/tv_myself"-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        android:gravity="center_vertical"-->
+    <!--        android:paddingVertical="16dp"-->
+    <!--        android:paddingStart="8dp"-->
+    <!--        android:textColor="@color/orange"-->
+    <!--        android:textSize="30sp"-->
+    <!--        app:layout_constraintEnd_toEndOf="parent"-->
+    <!--        app:layout_constraintStart_toStartOf="parent"-->
+    <!--        app:layout_constraintTop_toBottomOf="@id/tv_myself_title" />-->
 
     <TextView
         android:id="@+id/tv_friend"
@@ -39,7 +33,7 @@
         android:textColor="@color/black"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_myself" />
+        app:layout_constraintTop_toBottomOf="@+id/tv_myChat" />
 
 
     <androidx.recyclerview.widget.RecyclerView

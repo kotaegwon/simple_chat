@@ -9,7 +9,9 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.storage
-import com.ko.simple_chat.model.Chat
+import com.ko.simple_chat.model.ChatList
+import com.ko.simple_chat.model.ChatListItem
+import com.ko.simple_chat.model.ChatRoom
 import com.ko.simple_chat.model.User
 
 /**
@@ -268,7 +270,7 @@ object FirebaseManager {
         val myUid = auth.currentUser?.uid ?: return
         val roomUid = makeRoom(myUid, otherUid)
 
-        val chat = Chat(
+        val chat = ChatRoom(
             myUid = myUid,
             otherUid = otherUid,
             message = message,
@@ -314,7 +316,7 @@ object FirebaseManager {
      * @param onResult 완료 콜백(메시지 목록)
      */
 
-    fun listenMessage(otherUid: String, onResult: (List<Chat>) -> Unit) {
+    fun listenMessage(otherUid: String, onResult: (List<ChatRoom>) -> Unit) {
         val myUid = auth.currentUser?.uid ?: return
 
         val roomId = makeRoom(myUid, otherUid)
@@ -326,14 +328,89 @@ object FirebaseManager {
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot == null) return@addSnapshotListener
 
-                val list = mutableListOf<Chat>()
+                val list = mutableListOf<ChatRoom>()
 
                 for (doc in snapshot.documents) {
-                    val chat = doc.toObject(Chat::class.java)
+                    val chat = doc.toObject(ChatRoom::class.java)
                     chat?.let { list.add(it) }
                 }
                 onResult(list)
             }
     }
 
+    fun loadChatList(onResult: (List<ChatListItem>) -> Unit) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        db.collection("chatRooms")
+            .whereArrayContains("users", myUid)
+            .orderBy("updateAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, e ->
+                if (snapshot == null || e != null) return@addSnapshotListener
+
+                val roomDocs = snapshot.documents
+
+                // 1) chatRooms -> roomId, otherUid, lastMessage, updateAt 추출
+                val basic = roomDocs.mapNotNull { doc ->
+                    val room = doc.toObject(ChatList::class.java) ?: return@mapNotNull null
+//                    val otherUid = room.users.firstOrNull { it != myUid } ?: return@mapNotNull null
+                    val otherUid = room.users.firstOrNull { it != myUid } ?: myUid
+
+                    Triple(doc.id, otherUid, room)
+                }
+
+                // 2) otherUid들의 name을 users 컬렉션에서 조회 후 합치기
+                //    (간단 버전: 방 개수만큼 get() 호출)
+                val result = mutableListOf<ChatListItem>()
+
+                var remain = basic.size
+                if (remain == 0) {
+                    onResult(emptyList())
+                    return@addSnapshotListener
+                }
+
+                basic.forEach { (roomId, otherUid, room) ->
+                    db.collection("users").document(otherUid).get()
+                        .addOnSuccessListener { userSnap ->
+                            val otherName =
+                                if (otherUid == myUid) "나"
+                                else userSnap.getString("name")
+                                    ?: "(이름없음)"
+
+                            result.add(
+                                ChatListItem(
+                                    roomId = roomId,
+                                    otherUid = otherUid,
+                                    otherName = otherName,
+                                    lastMessage = room.lastMessage,
+                                    updateAt = room.updateAt
+                                )
+                            )
+
+                            remain--
+                            if (remain == 0) {
+                                // 최신순 유지하려면 updateAt으로 정렬 한번 더
+                                onResult(result.sortedByDescending { it.updateAt })
+                            }
+                        }
+                        .addOnFailureListener {
+                            // 실패해도 목록은 보여주기
+                            val otherName = "(불러오기 실패)"
+                            result.add(
+                                ChatListItem(
+                                    roomId,
+                                    otherUid,
+                                    otherName,
+                                    room.lastMessage,
+                                    room.updateAt
+                                )
+                            )
+
+                            remain--
+                            if (remain == 0) {
+                                onResult(result.sortedByDescending { it.updateAt })
+                            }
+                        }
+                }
+            }
+    }
 }
