@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/UserListFragment"
+        android:icon="@drawable/person_white"
+        android:title="친구" />
+
+    <item
+        android:id="@+id/ChatListFragment"
+        android:icon="@drawable/mode_white"
+        android:title="채팅" />
+</menu>

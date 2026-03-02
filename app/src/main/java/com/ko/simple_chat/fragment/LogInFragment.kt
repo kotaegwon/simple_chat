@@ -18,7 +18,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
+import com.ko.simple_chat.MainActivity
 import com.ko.simple_chat.R
 import com.ko.simple_chat.databinding.DialogRegisterBinding
 import com.ko.simple_chat.databinding.FragmentLoginBinding
@@ -94,6 +96,7 @@ class LogInFragment : Fragment(), View.OnClickListener {
         super.onViewCreated(view, savedInstanceState)
 
         setToolbar()
+        setBotNavigation()
         initGoogleLogin()
 
         binding.btnLogin.setOnClickListener(this)
@@ -335,8 +338,17 @@ class LogInFragment : Fragment(), View.OnClickListener {
 
     private fun setToolbar() {
         (requireActivity() as AppCompatActivity).supportActionBar?.show()
-        (requireActivity() as AppCompatActivity).supportActionBar?.title = getString(R.string.app_name)
+        (requireActivity() as AppCompatActivity).supportActionBar?.title =
+            getString(R.string.app_name)
         (requireActivity() as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(false)
+    }
+
+    private fun setBotNavigation() {
+        (requireActivity() as AppCompatActivity)
+            .findViewById<BottomNavigationView>(R.id.bottom_navigation)
+            ?.let {
+                it.visibility = View.GONE
+            }
     }
 
     /**

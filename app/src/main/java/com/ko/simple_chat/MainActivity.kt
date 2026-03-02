@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
+import androidx.navigation.ui.setupWithNavController
 import com.ko.simple_chat.databinding.ActivityMainBinding
 import timber.log.Timber
 
@@ -37,8 +38,15 @@ class MainActivity : AppCompatActivity() {
 //            insets
 //        }
         setSupportActionBar(binding.toolbar)
-
         navController = findNavController(R.id.nav_host_fragment_content_main)
+
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            val hideBottomNav = destination.id in setOf(
+                R.id.LogInFragment
+            )
+            binding.bottomNavigation.isVisible = !hideBottomNav
+        }
+        binding.bottomNavigation.setupWithNavController(navController)
     }
 
     override fun onDestroy() {

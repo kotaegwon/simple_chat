@@ -27,6 +27,16 @@
     </fragment>
 
     <fragment
+        android:id="@+id/ChatListFragment"
+        android:name="com.ko.simple_chat.fragment.ChatListFragment"
+        tools:layout="@layout/fragment_chat_list">
+
+        <action
+            android:id="@+id/action_to_ChatRoom"
+            app:destination="@+id/ChatRoomFragment" />
+    </fragment>
+
+    <fragment
         android:id="@+id/ChatRoomFragment"
         android:name="com.ko.simple_chat.fragment.ChatRoomFragment"
         tools:layout="@layout/fragment_chat_room">

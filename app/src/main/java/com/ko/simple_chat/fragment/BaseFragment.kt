@@ -14,11 +14,13 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.viewbinding.ViewBinding
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.ko.simple_chat.MainActivity
 import com.ko.simple_chat.R
 
 abstract class BaseFragment<VB : ViewBinding, T> : Fragment() {
 
-    protected var _binding: VB? = null
+    private var _binding: VB? = null
     protected val binding get() = _binding!!
 
     // 전체 리스트
@@ -67,6 +69,16 @@ abstract class BaseFragment<VB : ViewBinding, T> : Fragment() {
             supportActionBar?.title = title
             supportActionBar?.setDisplayHomeAsUpEnabled(showBack)
         }
+    }
+
+    /* ===========================+
+        Bottom Navigation Setting
+     =============================*/
+    protected fun setBotNavigation(showBack: Boolean) {
+        val botNav =
+            (requireActivity() as MainActivity).findViewById<BottomNavigationView>(R.id.bottom_navigation)
+
+        botNav.visibility = if (showBack) View.VISIBLE else View.GONE
     }
 
     /* ===========================+
