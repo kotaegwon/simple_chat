@@ -5,7 +5,7 @@ package com.ko.simple_chat.model
  *
  * @param myUid 내 uid
  * @param otherUid 상대방 uid
- * @param name 상대방 이름
+ * @param name 이름
  * @param message 메시지
  * @param time 메시지 전송 시간
  * @param read 메시지 읽음 여부

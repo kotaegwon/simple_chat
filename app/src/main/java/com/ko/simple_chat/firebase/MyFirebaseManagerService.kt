@@ -45,11 +45,12 @@ class MyFirebaseManagerService : FirebaseMessagingService() {
      * 알림을 생성하여 사용자에게 표시
      */
     override fun onMessageReceived(message: RemoteMessage) {
-        Timber.d("onMessageReceived: $message")
+        Timber.d("onMessageReceived: ${message.data}")
+        Timber.d("onMessageReceived: ${message.notification?.title}, ${message.notification?.body}")
 
         // 서버에서 전달된 data payload 값 추출
-        val title = message.data["title"] ?: "새 메시지"
-        val body = message.data["body"] ?: "메시지가 도착했습니다."
+        val title = message.notification?.title ?: "새 메시지"
+        val body = message.notification?.body ?: "메시지가 도착했습니다."
         val otherUid = message.data["otherUid"] ?: ""
 
         showNotification(title, body, otherUid)

@@ -43,6 +43,7 @@ exports.sendChatNotification = onDocumentCreated(
     const senderUid = messageData.myUid;
     const receiverUid = messageData.otherUid;
     const message = messageData.message;
+    const senderName = messageData.name;
 
     if (!senderUid || !receiverUid || !message) {
       console.log("필드 누락", messageData);
@@ -64,10 +65,10 @@ exports.sendChatNotification = onDocumentCreated(
       return;
     }
 
-    const senderDoc = await db.collection("users").doc(senderUid).get();
-    const senderName = senderDoc.exists
-      ? senderDoc.data()?.name || "새 메시지"
-      : "새 메시지";
+    // const senderDoc = await db.collection("users").doc(senderUid).get();
+    // const senderName = senderDoc.exists
+    //   ? senderDoc.data()?.name || "새 메시지"
+    //   : "새 메시지";
 
     await admin.messaging().send({
       token,

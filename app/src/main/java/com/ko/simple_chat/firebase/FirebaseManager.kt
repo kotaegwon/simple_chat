@@ -273,43 +273,48 @@ object FirebaseManager {
         val myUid = auth.currentUser?.uid ?: return
         val roomUid = makeRoom(myUid, otherUid)
 
-        val chat = ChatRoom(
-            myUid = myUid,
-            otherUid = otherUid,
-            message = message,
-            time = System.currentTimeMillis()
-        )
+        loadMyUserInfo { user ->
+            val name = user?.name ?: ""
 
-        // Firestore에서 'chatRooms' 컬렉션 내 방 ID(roomUid)에 해당하는 문서 참조 생성
-        val roomRef = db.collection("chatRooms").document(roomUid)
+            val chat = ChatRoom(
+                myUid = myUid,
+                otherUid = otherUid,
+                name = name,
+                message = message,
+                time = System.currentTimeMillis()
+            )
 
-        /**
-         * 방 정보
-         *
-         * users: 두 사용자의 uid
-         * lastMessage: 마지막 메시지
-         * updateAt: 마지막 메시지 전송 시간(정렬, 최신 순 표시용)
-         */
-        val roomData = hashMapOf(
-            "users" to listOf(myUid, otherUid),
-            "lastMessage" to message,
-            "updateAt" to chat.time
-        )
+            // Firestore에서 'chatRooms' 컬렉션 내 방 ID(roomUid)에 해당하는 문서 참조 생성
+            val roomRef = db.collection("chatRooms").document(roomUid)
 
-        /**
-         * 방이 없으면 생성
-         * 방이 있으면 업데이트
-         */
-        roomRef.set(roomData)
+            /**
+             * 방 정보
+             *
+             * users: 두 사용자의 uid
+             * lastMessage: 마지막 메시지
+             * updateAt: 마지막 메시지 전송 시간(정렬, 최신 순 표시용)
+             */
+            val roomData = hashMapOf(
+                "users" to listOf(myUid, otherUid),
+                "lastMessage" to message,
+                "updateAt" to chat.time
+            )
 
-        // messages 컬렉션 안에 메시지 저장
-        roomRef.collection("messages")
-            .add(chat)
-            .addOnSuccessListener {
-                onResult(true)
-            }.addOnFailureListener {
-                onResult(false)
-            }
+            /**
+             * 방이 없으면 생성
+             * 방이 있으면 업데이트
+             */
+            roomRef.set(roomData)
+
+            // messages 컬렉션 안에 메시지 저장
+            roomRef.collection("messages")
+                .add(chat)
+                .addOnSuccessListener {
+                    onResult(true)
+                }.addOnFailureListener {
+                    onResult(false)
+                }
+        }
     }
 
     /**
