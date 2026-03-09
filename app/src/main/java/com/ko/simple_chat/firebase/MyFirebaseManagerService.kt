@@ -7,7 +7,6 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -15,6 +14,8 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.ko.simple_chat.MainActivity
 import com.ko.simple_chat.R
+import com.ko.simple_chat.Utils.Def
+import com.ko.simple_chat.model.User
 import timber.log.Timber
 
 /**
@@ -51,31 +52,37 @@ class MyFirebaseManagerService : FirebaseMessagingService() {
         // 서버에서 전달된 data payload 값 추출
         val title = message.notification?.title ?: "새 메시지"
         val body = message.notification?.body ?: "메시지가 도착했습니다."
-        val otherUid = message.data["otherUid"] ?: ""
+        val senderUid = message.data["senderUid"] ?: ""
+        val receiverUid = message.data["receiverUid"] ?: ""
 
-        showNotification(title, body, otherUid)
+        val user = User(
+            uid = senderUid,
+            name = title
+        )
+
+        if(senderUid != receiverUid) showNotification(title, body, user)
     }
 
     /**
      * 채팅 알림을 생성하고 표시하는 함수
      */
-    private fun showNotification(title: String, body: String, otherUid: String) {
+    private fun showNotification(title: String, body: String, user: User) {
         val channelId = "chat_message_ch"
         val channelName = "Chat Message"
 
         createNotificationChannel(channelId, channelName)
 
         val intent = Intent(this, MainActivity::class.java).apply {
-            if (otherUid.isNotEmpty()) {
-                putExtra("otherUid", otherUid)
+            if (user.uid.isNotEmpty()) {
+                putExtra(Def.INTENT_NOTIFICATION, user)
             }
 
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
 
         val pendingIntent = PendingIntent.getActivity(
             this,
-            otherUid.hashCode(),
+            user.uid.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -91,13 +98,13 @@ class MyFirebaseManagerService : FirebaseMessagingService() {
             .build()
 
 
-        val hasPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                || ActivityCompat.checkSelfPermission(
-            this,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
+        val hasPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
         if (hasPermission) {
-            val notificationId = System.currentTimeMillis().toInt()
+            val notificationId = user.uid.hashCode()
 
             NotificationManagerCompat.from(this)
                 .notify(notificationId, notification)

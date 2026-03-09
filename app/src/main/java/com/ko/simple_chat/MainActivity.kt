@@ -1,13 +1,12 @@
 package com.ko.simple_chat
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -15,8 +14,11 @@ import androidx.core.view.isVisible
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
+import com.ko.simple_chat.Utils.Def
 import com.ko.simple_chat.databinding.ActivityMainBinding
+import com.ko.simple_chat.model.User
 import timber.log.Timber
+import kotlin.apply
 
 
 class MainActivity : AppCompatActivity() {
@@ -48,10 +50,40 @@ class MainActivity : AppCompatActivity() {
             binding.bottomNavigation.isVisible = !hideBottomNav
         }
         binding.bottomNavigation.setupWithNavController(navController)
+
+        handleNotificationIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+
+        Timber.d("onNewIntent: $intent")
+
+        handleNotificationIntent(intent)
     }
 
     override fun onDestroy() {
         super.onDestroy()
+    }
+
+    private fun handleNotificationIntent(intent: Intent?) {
+        val user = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent?.getParcelableExtra(Def.INTENT_NOTIFICATION, User::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent?.getParcelableExtra<User>(Def.INTENT_NOTIFICATION)
+        } ?: return
+
+        Timber.d("notification user uid = ${user.uid}")
+
+        val bundle = Bundle().apply {
+            putParcelable(Def.INTENT_USER_INFO, user)
+        }
+
+        if (navController.currentDestination?.id != R.id.ChatRoomFragment) {
+            navController.navigate(R.id.ChatRoomFragment, bundle)
+        }
     }
 
     private val permissionLauncher =

@@ -7,14 +7,13 @@ import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.firebase.firestore.util.Util
 import com.ko.simple_chat.R
+import com.ko.simple_chat.Utils.Def
 import com.ko.simple_chat.Utils.Utils
 import com.ko.simple_chat.adapter.ChatListAdapter
 import com.ko.simple_chat.adapter.RecyclerViewDecoration
 import com.ko.simple_chat.databinding.FragmentChatListBinding
 import com.ko.simple_chat.model.ChatListItem
-import com.ko.simple_chat.model.ChatRoom
 import com.ko.simple_chat.model.User
 import com.ko.simple_chat.viewmodel.ChatListViewModel
 import timber.log.Timber
@@ -98,7 +97,7 @@ class ChatListFragment : BaseFragment<FragmentChatListBinding, ChatListItem>(),
                 findNavController().navigate(
                     R.id.action_to_ChatRoom,
                     Bundle().apply {
-                        putParcelable("user_info", it)
+                        putParcelable(Def.INTENT_USER_INFO, it)
                     })
             }
         }
@@ -118,7 +117,7 @@ class ChatListFragment : BaseFragment<FragmentChatListBinding, ChatListItem>(),
         findNavController().navigate(
             R.id.action_to_ChatRoom,
             Bundle().apply {
-                putParcelable("user_info", user)
+                putParcelable(Def.INTENT_USER_INFO, user)
             })
         Timber.d("onItemClick: $user")
     }

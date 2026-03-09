@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ko.simple_chat.R
+import com.ko.simple_chat.Utils.Def
 import com.ko.simple_chat.adapter.ChatRoomAdapter
 import com.ko.simple_chat.adapter.ChatTypeItem
 import com.ko.simple_chat.databinding.FragmentChatRoomBinding
@@ -15,6 +16,7 @@ import com.ko.simple_chat.firebase.FirebaseManager
 import com.ko.simple_chat.model.ChatRoom
 import com.ko.simple_chat.model.User
 import com.ko.simple_chat.viewmodel.ChatViewModel
+import timber.log.Timber
 
 /**
  * 채팅방 프래그먼트
@@ -91,6 +93,7 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, ChatRoom>(), View
 
 //        uiAdapterTest()
         otherUid = user!!.uid
+
         myUid = FirebaseManager.auth.currentUser!!.uid
 
         binding.imgSend.setOnClickListener(this)
@@ -119,18 +122,20 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, ChatRoom>(), View
     }
 
     /**
-     * UserListFragment로 부터 User 클래스를 전달 받음
+     * UserListFragment, MainActivity로 부터 User 클래스를 전달 받음
      */
     private fun getArgument(): User? {
         val user = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             arguments?.getParcelable(
-                "user_info",
+                Def.INTENT_USER_INFO,
                 User::class.java
             )
         } else {
             @Suppress("DEPRECATION")
             arguments?.getParcelable("diary_item")
         }
+
+        Timber.d("getArgument: $user")
 
         setToolbar(true, user!!.name, true)
 

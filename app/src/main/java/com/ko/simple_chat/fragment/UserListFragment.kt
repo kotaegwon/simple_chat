@@ -13,6 +13,7 @@ import com.ko.simple_chat.firebase.FirebaseManager
 import com.ko.simple_chat.model.User
 import timber.log.Timber
 import com.ko.simple_chat.R
+import com.ko.simple_chat.Utils.Def
 import com.ko.simple_chat.adapter.RecyclerViewDecoration
 import com.ko.simple_chat.viewmodel.UserListViewModel
 
@@ -107,7 +108,7 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
                 findNavController().navigate(
                     R.id.action_to_ChatRoom,
                     Bundle().apply {
-                        putParcelable("user_info", it)
+                        putParcelable(Def.INTENT_USER_INFO, it)
                     })
             }
         }
@@ -127,7 +128,7 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
         findNavController().navigate(
             R.id.action_to_ChatRoom,
             Bundle().apply {
-                putParcelable("user_info", user)
+                putParcelable(Def.INTENT_USER_INFO, user)
             })
         Timber.d("onItemClick: $user")
     }

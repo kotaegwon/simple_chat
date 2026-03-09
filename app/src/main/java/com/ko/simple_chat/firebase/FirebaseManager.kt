@@ -379,10 +379,12 @@ object FirebaseManager {
                 basic.forEach { (roomId, otherUid, room) ->
                     db.collection("users").document(otherUid).get()
                         .addOnSuccessListener { userSnap ->
-                            val otherName =
-                                if (otherUid == myUid) "나"
-                                else userSnap.getString("name")
-                                    ?: "(이름없음)"
+//                            val otherName =
+//                                if (otherUid == myUid) "나"
+//                                else userSnap.getString("name")
+//                                    ?: "(이름없음)"
+
+                            val otherName = userSnap.getString("name") ?: "(이름없음)"
 
                             result.add(
                                 ChatListItem(
