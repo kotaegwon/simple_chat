@@ -20,7 +20,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
-import com.ko.simple_chat.MainActivity
 import com.ko.simple_chat.R
 import com.ko.simple_chat.databinding.DialogRegisterBinding
 import com.ko.simple_chat.databinding.FragmentLoginBinding
@@ -113,7 +112,9 @@ class LogInFragment : Fragment(), View.OnClickListener {
                 updateUi(false)
             } else {
                 logInViewModel.loadMyUserInfo()
-                updateUi(true)
+                if (FirebaseManager.isEmailVerified()) {
+                    updateUi(true)
+                }
             }
         }
 
@@ -165,6 +166,8 @@ class LogInFragment : Fragment(), View.OnClickListener {
             when (result) {
                 is LoginResult.Success -> {
                     toast(getString(R.string.login_completed, result.user.name))
+                    FirebaseManager.updateMyFcmTokenLoginSuccess()
+
                     findNavController().navigate(R.id.action_to_UserList)
                 }
 

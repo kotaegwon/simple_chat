@@ -42,7 +42,8 @@ class MainActivity : AppCompatActivity() {
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
             val hideBottomNav = destination.id in setOf(
-                R.id.LogInFragment
+                R.id.LogInFragment,
+                R.id.ChatRoomFragment
             )
             binding.bottomNavigation.isVisible = !hideBottomNav
         }

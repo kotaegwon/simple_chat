@@ -7,12 +7,15 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.storage
 import com.ko.simple_chat.model.ChatList
 import com.ko.simple_chat.model.ChatListItem
 import com.ko.simple_chat.model.ChatRoom
 import com.ko.simple_chat.model.User
+import timber.log.Timber
 
 /**
  * Firebase 인증, 데이터베이스, 스토리지 관리
@@ -412,5 +415,25 @@ object FirebaseManager {
                         }
                 }
             }
+    }
+
+    fun updateMyFcmToken(token: String) {
+        Timber.d("updateMyFcmToken: $token")
+
+        val uid = auth.currentUser?.uid ?: return
+
+        db.collection("users")
+            .document(uid)
+            .update("fcmToken", token)
+    }
+
+    fun updateMyFcmTokenLoginSuccess() {
+        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@addOnSuccessListener
+
+            FirebaseFirestore.getInstance().collection("users")
+                .document(uid)
+                .set(mapOf("fcmToken" to token), SetOptions.merge())
+        }
     }
 }

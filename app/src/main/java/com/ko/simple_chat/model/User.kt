@@ -11,11 +11,13 @@ import kotlinx.parcelize.Parcelize
  * @param email 사용자 이메일
  * @param name 사용자 이름
  * @param createAt 사용자 생성 시간
+ * @param fcmToken fcm토큰
  */
 @Parcelize
 data class User(
     val uid: String = "",
     val email: String = "",
     val name: String = "",
-    val createAt: Long = 0L
+    val createAt: Long = 0L,
+    val fcmToken: String = ""
 ) : Parcelable
