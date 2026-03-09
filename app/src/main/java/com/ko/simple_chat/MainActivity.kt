@@ -51,8 +51,9 @@ class MainActivity : AppCompatActivity() {
         }
         binding.bottomNavigation.setupWithNavController(navController)
 
-        handleNotificationIntent(intent)
-        checkFcmIntent(intent)
+        if (savedInstanceState == null) {
+            handleIntent(intent)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -61,25 +62,26 @@ class MainActivity : AppCompatActivity() {
 
         Timber.d("onNewIntent: $intent")
 
-        handleNotificationIntent(intent)
-        checkFcmIntent(intent)
+        handleIntent(intent)
     }
 
     override fun onDestroy() {
         super.onDestroy()
     }
 
-    private fun handleNotificationIntent(intent: Intent?) {
-        Timber.d("handleNotificationIntent: intent extras = ${intent?.extras}")
-
+    private fun handleIntent(intent: Intent?) {
         if (intent?.extras == null) return
 
         val user = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra(Def.INTENT_NOTIFICATION, User::class.java)
         } else {
             @Suppress("DEPRECATION")
-            (intent.getParcelableExtra<User>(Def.INTENT_NOTIFICATION))
-        } ?: return
+            intent.getParcelableExtra<User>(Def.INTENT_NOTIFICATION)
+        } ?: run {
+            val name = intent.getStringExtra("senderName") ?: return
+            val senderUid = intent.getStringExtra("senderUid") ?: return
+            User(uid = senderUid, name = name)
+        }
 
         val bundle = Bundle().apply {
             putParcelable(Def.INTENT_USER_INFO, user)
@@ -88,30 +90,55 @@ class MainActivity : AppCompatActivity() {
         if (navController.currentDestination?.id != R.id.ChatRoomFragment) {
             navController.navigate(R.id.ChatRoomFragment, bundle)
         }
+
+        intent.removeExtra(Def.INTENT_NOTIFICATION)
+        intent.removeExtra("senderName")
+        intent.removeExtra("senderUid")
     }
-
-
-    private fun checkFcmIntent(intent: Intent?) {
-        Timber.d("checkFcmIntent: intent extras = ${intent?.extras}")
-
-        if (intent?.extras == null) return
-
-        val name = intent.getStringExtra("senderName")
-        val senderUid = intent.getStringExtra("senderUid")
-
-        val user = User(
-            uid = senderUid ?: "",
-            name = name ?: ""
-        )
-
-        val bundle = Bundle().apply {
-            putParcelable(Def.INTENT_USER_INFO, user)
-        }
-
-        if (navController.currentDestination?.id != R.id.ChatRoomFragment) {
-            navController.navigate(R.id.ChatRoomFragment, bundle)
-        }
-    }
+//
+//    private fun handleNotificationIntent(intent: Intent?) {
+//        Timber.d("handleNotificationIntent: intent extras = ${intent?.extras}")
+//
+//        if (intent?.extras == null) return
+//
+//        val user = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+//            intent.getParcelableExtra(Def.INTENT_NOTIFICATION, User::class.java)
+//        } else {
+//            @Suppress("DEPRECATION")
+//            (intent.getParcelableExtra<User>(Def.INTENT_NOTIFICATION))
+//        } ?: return
+//
+//        val bundle = Bundle().apply {
+//            putParcelable(Def.INTENT_USER_INFO, user)
+//        }
+//
+//        if (navController.currentDestination?.id != R.id.ChatRoomFragment) {
+//            navController.navigate(R.id.ChatRoomFragment, bundle)
+//        }
+//    }
+//
+//
+//    private fun checkFcmIntent(intent: Intent?) {
+//        Timber.d("checkFcmIntent: intent extras = ${intent?.extras}")
+//
+//        if (intent?.extras == null) return
+//
+//        val name = intent.getStringExtra("senderName")
+//        val senderUid = intent.getStringExtra("senderUid")
+//
+//        val user = User(
+//            uid = senderUid ?: "",
+//            name = name ?: ""
+//        )
+//
+//        val bundle = Bundle().apply {
+//            putParcelable(Def.INTENT_USER_INFO, user)
+//        }
+//
+//        if (navController.currentDestination?.id != R.id.ChatRoomFragment) {
+//            navController.navigate(R.id.ChatRoomFragment, bundle)
+//        }
+//    }
 
     private val permissionLauncher =
         registerForActivityResult(
@@ -160,6 +187,17 @@ class MainActivity : AppCompatActivity() {
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
                 permissionList.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+        }
+
+        // 알림 권환
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionList.add(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
 
