@@ -9,4 +9,5 @@ import com.ko.simple_chat.model.ChatRoom
 sealed class ChatTypeItem {
     data class Send(val chat: ChatRoom) : ChatTypeItem()
     data class Receive(val chat: ChatRoom) : ChatTypeItem()
+    data class Date(val date: String) : ChatTypeItem()
 }

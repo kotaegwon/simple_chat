@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.ko.simple_chat.Utils.Utils
+import com.ko.simple_chat.databinding.DateHeaderItemBinding
 import com.ko.simple_chat.databinding.ReceiveItemBinding
 import com.ko.simple_chat.databinding.SendItemBinding
 import com.ko.simple_chat.model.ChatRoom
@@ -22,6 +23,7 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     companion object {
         const val SEND = 0
         const val RECEIVE = 1
+        const val DATE = 2
     }
 
     /**
@@ -40,6 +42,7 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         return when (itemList[position]) {
             is ChatTypeItem.Send -> SEND
             is ChatTypeItem.Receive -> RECEIVE
+            is ChatTypeItem.Date -> DATE
         }
     }
 
@@ -68,6 +71,11 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
                 ReceiveViewHolder(binding)
             }
 
+            DATE -> {
+                val binding = DateHeaderItemBinding.inflate(inflater, parent, false)
+                DateViewHolder(binding)
+            }
+
             else -> throw IllegalArgumentException("Invalid view type")
         }
     }
@@ -87,6 +95,7 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         when (uiType) {
             is ChatTypeItem.Send -> (holder as SendViewHolder).bind(uiType.chat)
             is ChatTypeItem.Receive -> (holder as ReceiveViewHolder).bind(uiType.chat)
+            is ChatTypeItem.Date -> (holder as DateViewHolder).bind(uiType.date)
         }
     }
 
@@ -125,6 +134,19 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             Timber.d("ReceiveViewHolder bind : $chat")
             binding.tvTime.text = Utils.formatTIme(chat.time)
             binding.tvMessage.text = chat.message
+        }
+    }
+
+    /**
+     * 날짜 뷰홀더
+     *
+     * @param binding 날짜 뷰바인딩
+     */
+    class DateViewHolder(val binding: DateHeaderItemBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(date: String){
+            binding.tvDate.text = date
         }
     }
 }

@@ -9,6 +9,7 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ko.simple_chat.R
 import com.ko.simple_chat.Utils.Def
+import com.ko.simple_chat.Utils.Utils
 import com.ko.simple_chat.adapter.ChatRoomAdapter
 import com.ko.simple_chat.adapter.ChatTypeItem
 import com.ko.simple_chat.databinding.FragmentChatRoomBinding
@@ -26,7 +27,6 @@ import timber.log.Timber
  * 송신 버튼을 누르면 메시지를 전송한다
  */
 class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, ChatRoom>(), View.OnClickListener {
-
 
     // RecyclerView Adapter
     private lateinit var chatAdapter: ChatRoomAdapter
@@ -58,18 +58,28 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, ChatRoom>(), View
     }
 
     override fun submitList(list: List<ChatRoom>) {
+        var lastDate: String? = null
+        val uiList = mutableListOf<ChatTypeItem>()
 
-        val uiList = list.map {
-            if (it.myUid == myUid) {
-                ChatTypeItem.Send(it)
+        list.forEach { chat ->
+            val currentDate = Utils.formatDateHeader(chat.time)
+
+            if (lastDate != currentDate) {
+                uiList.add(ChatTypeItem.Date(currentDate))
+                lastDate = currentDate
+            }
+
+            if (chat.myUid == myUid) {
+                uiList.add(ChatTypeItem.Send(chat))
             } else {
-                ChatTypeItem.Receive(it)
+                uiList.add(ChatTypeItem.Receive(chat))
             }
         }
-
         chatAdapter.submitList(uiList)
 
-        binding.mainRecyclerview.scrollToPosition(uiList.size - 1)
+        if (uiList.isNotEmpty()) {
+            binding.mainRecyclerview.scrollToPosition(uiList.size - 1)
+        }
     }
 
 
@@ -180,6 +190,8 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, ChatRoom>(), View
                         ) { success ->
                             if (success) {
                                 binding.editMessage.text.clear()
+                            } else {
+                                //TODO 재전송 GUI, 로직 표시
                             }
                         }
                     }

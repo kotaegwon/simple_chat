@@ -21,4 +21,9 @@ object Utils {
 
         return format.format(data)
     }
+
+    fun formatDateHeader(time: Long): String {
+        val sdf = java.text.SimpleDateFormat("yyyy년 M월 d일 E요일", Locale.KOREA)
+        return sdf.format(Date(time))
+    }
 }
