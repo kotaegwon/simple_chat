@@ -79,7 +79,8 @@ exports.sendChatNotification = onDocumentCreated(
       data: {
         roomId: event.params.roomId,
         senderUid,
-        receiverUid,
+        senderName,
+        receiverUid
       },
       android: {
         priority: "high",

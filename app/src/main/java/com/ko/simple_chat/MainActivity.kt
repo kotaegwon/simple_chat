@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNavigation.setupWithNavController(navController)
 
         handleNotificationIntent(intent)
+        checkFcmIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -61,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         Timber.d("onNewIntent: $intent")
 
         handleNotificationIntent(intent)
+        checkFcmIntent(intent)
     }
 
     override fun onDestroy() {
@@ -68,14 +70,39 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleNotificationIntent(intent: Intent?) {
+        Timber.d("handleNotificationIntent: intent extras = ${intent?.extras}")
+
+        if (intent?.extras == null) return
+
         val user = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent?.getParcelableExtra(Def.INTENT_NOTIFICATION, User::class.java)
+            intent.getParcelableExtra(Def.INTENT_NOTIFICATION, User::class.java)
         } else {
             @Suppress("DEPRECATION")
-            intent?.getParcelableExtra<User>(Def.INTENT_NOTIFICATION)
+            (intent.getParcelableExtra<User>(Def.INTENT_NOTIFICATION))
         } ?: return
 
-        Timber.d("notification user uid = ${user.uid}")
+        val bundle = Bundle().apply {
+            putParcelable(Def.INTENT_USER_INFO, user)
+        }
+
+        if (navController.currentDestination?.id != R.id.ChatRoomFragment) {
+            navController.navigate(R.id.ChatRoomFragment, bundle)
+        }
+    }
+
+
+    private fun checkFcmIntent(intent: Intent?) {
+        Timber.d("checkFcmIntent: intent extras = ${intent?.extras}")
+
+        if (intent?.extras == null) return
+
+        val name = intent.getStringExtra("senderName")
+        val senderUid = intent.getStringExtra("senderUid")
+
+        val user = User(
+            uid = senderUid ?: "",
+            name = name ?: ""
+        )
 
         val bundle = Bundle().apply {
             putParcelable(Def.INTENT_USER_INFO, user)
