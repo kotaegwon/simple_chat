@@ -54,6 +54,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.0.0")
     implementation("androidx.multidex:multidex:2.0.1")
 
+    implementation("com.github.bumptech.glide:glide:5.0.5")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

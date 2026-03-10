@@ -1,5 +1,6 @@
 package com.ko.simple_chat.firebase
 
+import android.net.Uri
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
@@ -385,6 +386,7 @@ object FirebaseManager {
 //                                    ?: "(이름없음)"
 
                             val otherName = userSnap.getString("name") ?: "(이름없음)"
+                            val profileImageUrl = userSnap.getString("profileImageUrl") ?: ""
 
                             result.add(
                                 ChatListItem(
@@ -392,7 +394,8 @@ object FirebaseManager {
                                     otherUid = otherUid,
                                     otherName = otherName,
                                     lastMessage = room.lastMessage,
-                                    updateAt = room.updateAt
+                                    updateAt = room.updateAt,
+                                    profileImageUrl = profileImageUrl
                                 )
                             )
 
@@ -411,7 +414,7 @@ object FirebaseManager {
                                     otherUid,
                                     otherName,
                                     room.lastMessage,
-                                    room.updateAt
+                                    room.updateAt,
                                 )
                             )
 
@@ -442,5 +445,31 @@ object FirebaseManager {
                 .document(uid)
                 .set(mapOf("fcmToken" to token), SetOptions.merge())
         }
+    }
+
+    fun uploadProfileImage(uid: String, uri: Uri, onResult: (Boolean, String?) -> Unit) {
+        val imageRef = storage.reference.child("profileImages/$uid")
+
+        imageRef.putFile(uri)
+            .addOnSuccessListener {
+                imageRef.downloadUrl
+                    .addOnSuccessListener { downloadUri ->
+                        db.collection("users")
+                            .document(uid)
+                            .update("profileImageUrl", downloadUri.toString())
+                            .addOnSuccessListener {
+                                onResult(true, downloadUri.toString())
+                            }
+                            .addOnFailureListener { e ->
+                                onResult(false, e.message)
+                            }
+                    }
+                    .addOnFailureListener { e ->
+                        onResult(false, e.message)
+                    }
+            }
+            .addOnFailureListener { e ->
+                onResult(false, e.message)
+            }
     }
 }

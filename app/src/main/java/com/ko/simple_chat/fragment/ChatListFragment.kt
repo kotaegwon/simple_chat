@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
 import com.ko.simple_chat.R
 import com.ko.simple_chat.Utils.Def
 import com.ko.simple_chat.Utils.Utils
@@ -90,6 +91,15 @@ class ChatListFragment : BaseFragment<FragmentChatListBinding, ChatListItem>(),
                 email = "",
                 createAt = item.updateAt
             )
+        }
+
+        viewModel.myInfo.observe(viewLifecycleOwner) { user ->
+            Glide.with(requireContext())
+                .load(user?.profileImageUrl)
+                .placeholder(R.drawable.account_circle)
+                .error(R.drawable.account_circle)
+                .circleCrop()
+                .into(binding.tvMyChat.imgProfile)
         }
 
         binding.tvMyChat.root.setOnClickListener {

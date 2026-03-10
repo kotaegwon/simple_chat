@@ -3,6 +3,8 @@ package com.ko.simple_chat.adapter
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.ko.simple_chat.R
 import com.ko.simple_chat.databinding.UserListItemBinding
 import com.ko.simple_chat.model.User
 import timber.log.Timber
@@ -94,6 +96,13 @@ class UserListAdapter(val listener: Listener) : RecyclerView.Adapter<RecyclerVie
     class UserViewHolder(val binding: UserListItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(user: User) {
             binding.tvUser.text = user.name
+
+            Glide.with(binding.imgProfile.context)
+                .load(user.profileImageUrl)
+                .placeholder(R.drawable.account_circle)
+                .error(R.drawable.account_circle)
+                .circleCrop()
+                .into(binding.imgProfile)
         }
     }
 }

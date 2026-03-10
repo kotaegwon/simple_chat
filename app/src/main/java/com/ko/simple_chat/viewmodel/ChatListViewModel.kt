@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.ko.simple_chat.firebase.FirebaseManager
 import com.ko.simple_chat.model.ChatListItem
+import com.ko.simple_chat.model.User
 
 class ChatListViewModel : ViewModel() {
     private val _chatList = MutableLiveData<List<ChatListItem>>()
@@ -13,8 +14,18 @@ class ChatListViewModel : ViewModel() {
     private val _myChat = MutableLiveData<ChatListItem>()
     val myChat: LiveData<ChatListItem> get() = _myChat
 
+    private val _myInfo = MutableLiveData<User?>()
+    val myInfo: MutableLiveData<User?> get() = _myInfo
+
     init {
         loadChatList()
+        loadMyInfo()
+    }
+
+    fun loadMyInfo() {
+        FirebaseManager.loadMyUserInfo { user ->
+            _myInfo.postValue(user)
+        }
     }
 
     fun loadChatList() {

@@ -19,5 +19,6 @@ data class User(
     val email: String = "",
     val name: String = "",
     val createAt: Long = 0L,
-    val fcmToken: String = ""
+    val fcmToken: String = "",
+    val profileImageUrl: String = ""
 ) : Parcelable

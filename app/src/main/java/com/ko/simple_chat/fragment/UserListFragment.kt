@@ -1,12 +1,19 @@
 package com.ko.simple_chat.fragment
 
+import android.app.Dialog
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.ko.simple_chat.BuildConfig
 import com.ko.simple_chat.adapter.UserListAdapter
 import com.ko.simple_chat.databinding.FragmentUserListBinding
 import com.ko.simple_chat.firebase.FirebaseManager
@@ -15,7 +22,15 @@ import timber.log.Timber
 import com.ko.simple_chat.R
 import com.ko.simple_chat.Utils.Def
 import com.ko.simple_chat.adapter.RecyclerViewDecoration
+import com.ko.simple_chat.databinding.BottomSheetFriendsBinding
+import com.ko.simple_chat.databinding.BottomSheetMyselfBinding
+import com.ko.simple_chat.databinding.BottomSheetProfileSettingBinding
+import com.ko.simple_chat.databinding.DialogProfileImageBinding
 import com.ko.simple_chat.viewmodel.UserListViewModel
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 /**
@@ -29,7 +44,33 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
     private lateinit var userListAdapter: UserListAdapter
     private var mySelf: User? = null
 
-    private val userListViewModel : UserListViewModel by viewModels()
+    private val userListViewModel: UserListViewModel by viewModels()
+
+    // 사진 저장용
+    private lateinit var photoFile: File
+    private lateinit var photoUri: Uri
+
+    // 갤러리 선택 ActivityResultLauncher
+    private val photoPickerLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                Timber.d("선택된 이미지 URI: $it")
+                // 여기서 이미지 처리 or 저장
+                uploadSelectedProfileImage(it)
+                showLoading(true)
+            }
+        }
+
+    // 카메라 선택 ActivityResultLauncher
+    private val cameraLauncher =
+        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            if (success) {
+                Timber.d("촬영 성공: $photoUri")
+                // photoUri 사용
+                uploadSelectedProfileImage(photoUri)
+                showLoading(true)
+            }
+        }
 
     override fun inflateBinding(
         inflater: LayoutInflater,
@@ -82,7 +123,7 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
         }
 
         // Firebase에서 사용자 목록을 가져와서 Adapter에 전달
-        userListViewModel.userList.observe(viewLifecycleOwner){ list ->
+        userListViewModel.userList.observe(viewLifecycleOwner) { list ->
             originList.apply {
                 clear()
                 addAll(list)
@@ -97,26 +138,44 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
         }
 
         //Firebase에서 사용자 정보를 가져와서 Toolbar에 표시
-        userListViewModel.myInfo.observe(viewLifecycleOwner){ user ->
+        userListViewModel.myInfo.observe(viewLifecycleOwner) { user ->
             setToolbar(true, getString(R.string.app_name), true)
             mySelf = user
             binding.tvMyself.text = user?.name
+
+            Glide.with(requireContext())
+                .load(user?.profileImageUrl)
+                .placeholder(R.drawable.account_circle)
+                .error(R.drawable.account_circle)
+                .circleCrop()
+                .into(binding.imgProfile)
         }
 
         binding.tvMyself.setOnClickListener {
             mySelf?.let {
-                findNavController().navigate(
-                    R.id.action_to_ChatRoom,
-                    Bundle().apply {
-                        putParcelable(Def.INTENT_USER_INFO, it)
-                    })
+//                findNavController().navigate(
+//                    R.id.action_to_ChatRoom,
+//                    Bundle().apply {
+//                        putParcelable(Def.INTENT_USER_INFO, it)
+//                    })
+                showMyselfBottomSheet(it)
+            }
+        }
+
+        binding.imgProfile.setOnClickListener {
+            mySelf?.let {
+//                findNavController().navigate(
+//                    R.id.action_to_ChatRoom,
+//                    Bundle().apply {
+//                        putParcelable(Def.INTENT_USER_INFO, it)
+//                    })
+                showMyselfBottomSheet(it)
             }
         }
 
         setUpMenu()
 
         Timber.d("onViewCreated -")
-
     }
 
     /**
@@ -125,11 +184,197 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
      * 사용자를 선택하면 채팅방으로 이동한다
      */
     override fun onItemClicked(user: User) {
-        findNavController().navigate(
-            R.id.action_to_ChatRoom,
-            Bundle().apply {
-                putParcelable(Def.INTENT_USER_INFO, user)
-            })
-        Timber.d("onItemClick: $user")
+        showUserBottomSheet(user)
+    }
+
+    /**
+     * 갤러리에서 사진 선택
+     */
+    fun showPhotoSelectionActivity() {
+        photoPickerLauncher.launch("image/*")
+    }
+
+    /**
+     * 임시 파일 생성(카메라 촬영용)
+     */
+    fun createFile(): File {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val storageDir = requireContext().cacheDir   // cacheDir 권장
+        return File.createTempFile(
+            "IMG_${timeStamp}_",
+            ".jpg",
+            storageDir
+        )
+    }
+
+    /**
+     * 카메라 촬영 Activity 호출
+     */
+    fun showPhotoCaptureActivity() {
+        photoFile = createFile()
+
+        photoUri = FileProvider.getUriForFile(
+            requireContext(),
+            "${BuildConfig.APPLICATION_ID}.fileprovider",
+            photoFile
+        )
+
+        cameraLauncher.launch(photoUri)
+    }
+
+    private fun uploadSelectedProfileImage(imageUri: Uri) {
+        val uid = mySelf?.uid ?: return
+
+        FirebaseManager.uploadProfileImage(uid, imageUri) { success, result ->
+            requireActivity().runOnUiThread {
+                if (success) {
+                    Timber.d("프로필 이미지 업로드 성공: $result")
+                    // 필요하면 프로필 화면 갱신
+                    showLoading(false)
+                } else {
+                    Timber.e("프로필 이미지 업로드 실패: $result")
+                }
+            }
+        }
+    }
+
+    private fun showMyselfBottomSheet(user: User) {
+        val bottomSheetDialog = BottomSheetDialog(requireContext())
+        val binding = BottomSheetMyselfBinding.inflate(layoutInflater)
+
+        bottomSheetDialog.setContentView(binding.root)
+
+        val imageProfile = binding.imgProfile
+        val tvProfile = binding.tvProfile
+        val tvChat = binding.tvChat
+        val btnClose = binding.btnClose
+
+        Glide.with(imageProfile.context)
+            .load(user.profileImageUrl)
+            .placeholder(R.drawable.account_circle)
+            .error(R.drawable.account_circle)
+            .circleCrop()
+            .into(imageProfile)
+
+        imageProfile.setOnClickListener {
+            showProfileImageDialog(user.profileImageUrl)
+        }
+
+        tvProfile.setOnClickListener {
+            bottomSheetDialog.dismiss()
+            // 여기서 프로필 화면으로 이동하거나 프로필 다이얼로그 띄우기 가능
+            // 예:
+            // findNavController().navigate(...)
+            showProfileImageBottomSheet()
+        }
+
+        tvChat.setOnClickListener {
+            bottomSheetDialog.dismiss()
+
+            findNavController().navigate(
+                R.id.action_to_ChatRoom,
+                Bundle().apply {
+                    putParcelable(Def.INTENT_USER_INFO, user)
+                }
+            )
+        }
+
+        btnClose.setOnClickListener {
+            bottomSheetDialog.dismiss()
+        }
+
+        bottomSheetDialog.show()
+    }
+
+    private fun showUserBottomSheet(user: User) {
+        val bottomSheetDialog = BottomSheetDialog(requireContext())
+        val binding = BottomSheetFriendsBinding.inflate(layoutInflater)
+
+        bottomSheetDialog.setContentView(binding.root)
+
+        val imageProfile = binding.imgProfile
+        val tvChat = binding.tvChat
+        val btnClose = binding.btnClose
+
+        Glide.with(imageProfile.context)
+            .load(user.profileImageUrl)
+            .placeholder(R.drawable.account_circle)
+            .error(R.drawable.account_circle)
+            .circleCrop()
+            .into(imageProfile)
+
+        imageProfile.setOnClickListener {
+            showProfileImageDialog(user.profileImageUrl)
+        }
+
+        tvChat.setOnClickListener {
+            bottomSheetDialog.dismiss()
+
+            findNavController().navigate(
+                R.id.action_to_ChatRoom,
+                Bundle().apply {
+                    putParcelable(Def.INTENT_USER_INFO, user)
+                }
+            )
+        }
+
+        btnClose.setOnClickListener {
+            bottomSheetDialog.dismiss()
+        }
+
+        bottomSheetDialog.show()
+    }
+
+    private fun showProfileImageBottomSheet() {
+        val bottomSheetDialog = BottomSheetDialog(requireContext())
+        val binding = BottomSheetProfileSettingBinding.inflate(layoutInflater)
+
+        bottomSheetDialog.setContentView(binding.root)
+
+        val tvCamera = binding.tvCamera
+        val tvAlbum = binding.tvAlbum
+        val btnClose = binding.btnClose
+
+        tvCamera.setOnClickListener {
+            showPhotoCaptureActivity()
+            bottomSheetDialog.dismiss()
+        }
+
+        tvAlbum.setOnClickListener {
+            showPhotoSelectionActivity()
+            bottomSheetDialog.dismiss()
+        }
+
+        btnClose.setOnClickListener {
+            bottomSheetDialog.dismiss()
+        }
+
+        bottomSheetDialog.show()
+    }
+
+    private fun showProfileImageDialog(imageUrl: String?) {
+        if (imageUrl.isNullOrBlank()) return
+
+        val dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val binding = DialogProfileImageBinding.inflate(layoutInflater)
+        dialog.setContentView(binding.root)
+
+        val imageView = binding.imgProfileFull
+
+        Glide.with(requireContext())
+            .load(imageUrl)
+            .placeholder(R.drawable.account_circle)
+            .error(R.drawable.account_circle)
+            .into(imageView)
+
+        imageView.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showLoading(show: Boolean){
+        binding.loadingOverlay.visibility = if (show) View.VISIBLE else View.GONE
     }
 }

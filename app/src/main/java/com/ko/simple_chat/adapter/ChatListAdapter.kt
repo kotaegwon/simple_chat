@@ -3,6 +3,8 @@ package com.ko.simple_chat.adapter
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.ko.simple_chat.R
 import com.ko.simple_chat.Utils.Utils
 import com.ko.simple_chat.databinding.ChatListItemBinding
 import com.ko.simple_chat.model.ChatListItem
@@ -54,6 +56,13 @@ class ChatListAdapter(val listener: Listener) : RecyclerView.Adapter<RecyclerVie
             binding.tvUser.text = chat.otherName
             binding.tvLastMessage.text = chat.lastMessage
             binding.tvLastTime.text = Utils.formatTImeY(chat.updateAt)
+
+            Glide.with(binding.imgProfile.context)
+                .load(chat.profileImageUrl)
+                .placeholder(R.drawable.account_circle)
+                .error(R.drawable.account_circle)
+                .circleCrop()
+                .into(binding.imgProfile)
         }
     }
 }
