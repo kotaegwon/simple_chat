@@ -24,6 +24,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:layout_marginTop="10dp"
         android:outlineProvider="none"
         app:cardBackgroundColor="@color/white"
         app:cardCornerRadius="8dp"
@@ -63,6 +64,7 @@
         style="@style/EditText_LogIn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:hint="이름을 입력하세요"
         android:paddingVertical="12dp"
         android:textColorHint="#80FF8800" />

@@ -20,7 +20,8 @@
     <string name="google_login_success">구글 로그인 성공</string>
     <string name="btn_dialog_cancel">취소</string>
     <string name="btn_dialog_okay">확인</string>
-    <string name="search">검색</string>
+    <string name="toolbar_search">검색</string>
+    <string name="toolbar_add">친구 추가</string>
     <string name="start_talk">채팅 시작하기</string>
     <string name="login_completed">%s님 환영합니다 </string>
     <string name="myself">나</string>
@@ -30,4 +31,13 @@
     <string name="bottom_sheet_album">앨범에서 선택하기</string>
     <string name="bottom_sheet_chat">채팅하기</string>
     <string name="bottom_sheet_set_profile">프로필 사진 설정</string>
+    <string name="accept">수락</string>
+    <string name="decline">거절</string>
+    <string name="friend_req">친구 요청</string>
+    <string name="no_friend_req">친구 요청이 없습니다</string>
+    <string name="delete_friend">친구 삭제</string>
+    <string name="delete_confirm">정말 삭제하시겠습니까?</string>
+    <string name="delete_yes">예</string>
+    <string name="delete_no">아니오</string>
+
 </resources>

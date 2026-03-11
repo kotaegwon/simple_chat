@@ -8,10 +8,12 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.storage
+import com.ko.simple_chat.Utils.Def
 import com.ko.simple_chat.model.ChatList
 import com.ko.simple_chat.model.ChatListItem
 import com.ko.simple_chat.model.ChatRoom
@@ -166,20 +168,20 @@ object FirebaseManager {
             name = name
         )
 
-        db.collection("users")
+        db.collection(Def.Collection.USERS)
             .document(firebaseUser.uid)
             .set(user)
     }
 
     /**
-     * 로그인 성공 후 DB에서 정보 가져오기
+     * 내 정보 가져오기
      *
      * @param onResult 완료 콜백(사용자 정보)
      */
     fun loadMyUserInfo(onResult: (User?) -> Unit) {
         val uid = auth.currentUser?.uid ?: return
 
-        db.collection("users")
+        db.collection(Def.Collection.USERS)
             .document(uid)
             .addSnapshotListener { snapshot, _ ->
                 val user = snapshot?.toObject(User::class.java)
@@ -223,7 +225,7 @@ object FirebaseManager {
             email = user.email ?: ""
         )
 
-        db.collection("users")
+        db.collection(Def.Collection.USERS)
             .document(user.uid)
             .set(data)
     }
@@ -234,7 +236,7 @@ object FirebaseManager {
      * @param onResult 완료 콜백(사용자 목록)
      */
     fun loadUserList(onResult: (List<User>) -> Unit) {
-        db.collection("users")
+        db.collection(Def.Collection.USERS)
             .addSnapshotListener { snapshot, _ ->
 
                 val list = snapshot?.documents
@@ -286,7 +288,7 @@ object FirebaseManager {
             )
 
             // Firestore에서 'chatRooms' 컬렉션 내 방 ID(roomUid)에 해당하는 문서 참조 생성
-            val roomRef = db.collection("chatRooms").document(roomUid)
+            val roomRef = db.collection(Def.Collection.CHAT_ROOMS).document(roomUid)
 
             /**
              * 방 정보
@@ -296,9 +298,9 @@ object FirebaseManager {
              * updateAt: 마지막 메시지 전송 시간(정렬, 최신 순 표시용)
              */
             val roomData = hashMapOf(
-                "users" to listOf(myUid, otherUid),
-                "lastMessage" to message,
-                "updateAt" to chat.time
+                Def.Collection.USERS to listOf(myUid, otherUid),
+                Def.ChatRoomsFields.LAST_MESSAGE to message,
+                Def.ChatRoomsFields.UPDATE_AT to chat.time
             )
 
             /**
@@ -308,7 +310,7 @@ object FirebaseManager {
             roomRef.set(roomData)
 
             // messages 컬렉션 안에 메시지 저장
-            roomRef.collection("messages")
+            roomRef.collection(Def.Collection.CHAT_ROOMS_MESSAGES)
                 .add(chat)
                 .addOnSuccessListener {
                     onResult(true)
@@ -330,10 +332,10 @@ object FirebaseManager {
 
         val roomId = makeRoom(myUid, otherUid)
 
-        db.collection("chatRooms")
+        db.collection(Def.Collection.CHAT_ROOMS)
             .document(roomId)
-            .collection("messages")
-            .orderBy("time")
+            .collection(Def.Collection.CHAT_ROOMS_MESSAGES)
+            .orderBy(Def.MessageFields.TIME)
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot == null) return@addSnapshotListener
 
@@ -350,80 +352,135 @@ object FirebaseManager {
     fun loadChatList(onResult: (List<ChatListItem>) -> Unit) {
         val myUid = auth.currentUser?.uid ?: return
 
-        db.collection("chatRooms")
-            .whereArrayContains("users", myUid)
-            .orderBy("updateAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, e ->
-                if (snapshot == null || e != null) return@addSnapshotListener
+        db.collection(Def.Collection.USERS)
+            .document(myUid)
+            .collection(Def.Collection.FRIENDS)
+            .get()
+            .addOnSuccessListener { friendSnapshot ->
 
-                val roomDocs = snapshot.documents
+                val friendUidSet = friendSnapshot.documents
+                    .mapNotNull { it.getString(Def.UsersFields.UID) }
+                    .toSet()
 
-                // 1) chatRooms -> roomId, otherUid, lastMessage, updateAt 추출
-                val basic = roomDocs.mapNotNull { doc ->
-                    val room = doc.toObject(ChatList::class.java) ?: return@mapNotNull null
-//                    val otherUid = room.users.firstOrNull { it != myUid } ?: return@mapNotNull null
-                    val otherUid = room.users.firstOrNull { it != myUid } ?: myUid
+                db.collection(Def.Collection.CHAT_ROOMS)
+                    .whereArrayContains(Def.Collection.USERS, myUid)
+                    .orderBy(Def.ChatRoomsFields.UPDATE_AT, Query.Direction.DESCENDING)
+                    .addSnapshotListener { snapshot, e ->
 
-                    Triple(doc.id, otherUid, room)
-                }
-
-                // 2) otherUid들의 name을 users 컬렉션에서 조회 후 합치기
-                //    (간단 버전: 방 개수만큼 get() 호출)
-                val result = mutableListOf<ChatListItem>()
-
-                var remain = basic.size
-                if (remain == 0) {
-                    onResult(emptyList())
-                    return@addSnapshotListener
-                }
-
-                basic.forEach { (roomId, otherUid, room) ->
-                    db.collection("users").document(otherUid).get()
-                        .addOnSuccessListener { userSnap ->
-//                            val otherName =
-//                                if (otherUid == myUid) "나"
-//                                else userSnap.getString("name")
-//                                    ?: "(이름없음)"
-
-                            val otherName = userSnap.getString("name") ?: "(이름없음)"
-                            val profileImageUrl = userSnap.getString("profileImageUrl") ?: ""
-
-                            result.add(
-                                ChatListItem(
-                                    roomId = roomId,
-                                    otherUid = otherUid,
-                                    otherName = otherName,
-                                    lastMessage = room.lastMessage,
-                                    updateAt = room.updateAt,
-                                    profileImageUrl = profileImageUrl
-                                )
-                            )
-
-                            remain--
-                            if (remain == 0) {
-                                // 최신순 유지하려면 updateAt으로 정렬 한번 더
-                                onResult(result.sortedByDescending { it.updateAt })
-                            }
+                        if (snapshot == null || e != null) {
+                            onResult(emptyList())
+                            return@addSnapshotListener
                         }
-                        .addOnFailureListener {
-                            // 실패해도 목록은 보여주기
-                            val otherName = "(불러오기 실패)"
-                            result.add(
-                                ChatListItem(
-                                    roomId,
-                                    otherUid,
-                                    otherName,
-                                    room.lastMessage,
-                                    room.updateAt,
-                                )
-                            )
 
-                            remain--
-                            if (remain == 0) {
-                                onResult(result.sortedByDescending { it.updateAt })
+                        val basic = snapshot.documents.mapNotNull { doc ->
+                            val room = doc.toObject(ChatList::class.java) ?: return@mapNotNull null
+                            val otherUid = room.users.firstOrNull { it != myUid } ?: myUid
+
+                            val isMyChat = otherUid == myUid
+                            val isFriendChat = otherUid in friendUidSet
+
+                            if (!isMyChat && !isFriendChat) {
+                                return@mapNotNull null
                             }
+
+                            Triple(doc.id, otherUid, room)
                         }
-                }
+
+                        if (basic.isEmpty()) {
+                            onResult(emptyList())
+                            return@addSnapshotListener
+                        }
+
+                        val result = mutableListOf<ChatListItem>()
+                        var remain = basic.size
+
+                        basic.forEach { (roomId, otherUid, room) ->
+                            db.collection(Def.Collection.USERS)
+                                .document(otherUid)
+                                .get()
+                                .addOnSuccessListener { userSnap ->
+                                    val otherName =
+                                        userSnap.getString(Def.UsersFields.NAME) ?: ""
+                                    val profileImageUrl =
+                                        userSnap.getString(Def.UsersFields.PROFILE_IMAGES) ?: ""
+
+                                    result.add(
+                                        ChatListItem(
+                                            roomId = roomId,
+                                            otherUid = otherUid,
+                                            otherName = otherName,
+                                            lastMessage = room.lastMessage,
+                                            updateAt = room.updateAt,
+                                            profileImageUrl = profileImageUrl
+                                        )
+                                    )
+
+                                    remain--
+                                    if (remain == 0) {
+                                        onResult(result.sortedByDescending { it.updateAt })
+                                    }
+                                }
+                                .addOnFailureListener {
+                                    result.add(
+                                        ChatListItem(
+                                            roomId = roomId,
+                                            otherUid = otherUid,
+                                            otherName = "(불러오기 실패)",
+                                            lastMessage = room.lastMessage,
+                                            updateAt = room.updateAt,
+                                            profileImageUrl = ""
+                                        )
+                                    )
+
+                                    remain--
+                                    if (remain == 0) {
+                                        onResult(result.sortedByDescending { it.updateAt })
+                                    }
+                                }
+                        }
+                    }
+            }
+            .addOnFailureListener {
+                // 친구 목록을 못 읽어도 self chat은 보여주기
+                db.collection(Def.Collection.CHAT_ROOMS)
+                    .whereArrayContains(Def.Collection.USERS, myUid)
+                    .orderBy(Def.ChatRoomsFields.UPDATE_AT, Query.Direction.DESCENDING)
+                    .addSnapshotListener { snapshot, e ->
+
+                        if (snapshot == null || e != null) {
+                            onResult(emptyList())
+                            return@addSnapshotListener
+                        }
+
+                        val basic = snapshot.documents.mapNotNull { doc ->
+                            val room = doc.toObject(ChatList::class.java) ?: return@mapNotNull null
+                            val otherUid = room.users.firstOrNull { it != myUid } ?: myUid
+
+                            if (otherUid != myUid) {
+                                return@mapNotNull null
+                            }
+
+                            Triple(doc.id, otherUid, room)
+                        }
+
+                        if (basic.isEmpty()) {
+                            onResult(emptyList())
+                            return@addSnapshotListener
+                        }
+
+                        val result = basic.map { (roomId, otherUid, room) ->
+                            ChatListItem(
+                                roomId = roomId,
+                                otherUid = otherUid,
+                                otherName = "나",
+                                lastMessage = room.lastMessage,
+                                updateAt = room.updateAt,
+                                profileImageUrl = ""
+                            )
+                        }
+
+                        onResult(result.sortedByDescending { it.updateAt })
+                    }
             }
     }
 
@@ -432,31 +489,31 @@ object FirebaseManager {
 
         val uid = auth.currentUser?.uid ?: return
 
-        db.collection("users")
+        db.collection(Def.Collection.USERS)
             .document(uid)
-            .update("fcmToken", token)
+            .update(Def.UsersFields.FCM_TOKEN, token)
     }
 
     fun updateMyFcmTokenLoginSuccess() {
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
             val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@addOnSuccessListener
 
-            FirebaseFirestore.getInstance().collection("users")
+            FirebaseFirestore.getInstance().collection(Def.Collection.USERS)
                 .document(uid)
-                .set(mapOf("fcmToken" to token), SetOptions.merge())
+                .set(mapOf(Def.UsersFields.FCM_TOKEN to token), SetOptions.merge())
         }
     }
 
     fun uploadProfileImage(uid: String, uri: Uri, onResult: (Boolean, String?) -> Unit) {
-        val imageRef = storage.reference.child("profileImages/$uid")
+        val imageRef = storage.reference.child("profileImageUrl/$uid")
 
         imageRef.putFile(uri)
             .addOnSuccessListener {
                 imageRef.downloadUrl
                     .addOnSuccessListener { downloadUri ->
-                        db.collection("users")
+                        db.collection(Def.Collection.USERS)
                             .document(uid)
-                            .update("profileImageUrl", downloadUri.toString())
+                            .update(Def.UsersFields.PROFILE_IMAGES, downloadUri.toString())
                             .addOnSuccessListener {
                                 onResult(true, downloadUri.toString())
                             }
@@ -469,6 +526,312 @@ object FirebaseManager {
                     }
             }
             .addOnFailureListener { e ->
+                onResult(false, e.message)
+            }
+    }
+
+    /**
+     * 이름 + 이메일로 사용자 찾기
+     *
+     * 친구 추가 시 사용, 정확히 일치하는 사용자를 찾기 위함
+     */
+    fun findUserByNameAndEmail(name: String, email: String, onResult: (User?) -> Unit) {
+        db.collection(Def.Collection.USERS)
+            .whereEqualTo(Def.UsersFields.NAME, name)
+            .whereEqualTo(Def.UsersFields.EMAIL, email)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val user = snapshot.documents.firstOrNull()?.toObject(User::class.java)
+                onResult(user)
+            }
+            .addOnFailureListener { snapshot ->
+                onResult(null)
+            }
+    }
+
+    /**
+     * 친구 요청 보내기
+     *
+     * 상대방의 users/{targetUid}/friendRequests/{myUid}에 요청 정보 저장
+     */
+    fun sendFriendRequest(targetUser: User, onResult: (Boolean, String?) -> Unit) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        if (myUid == targetUser.uid) {
+            onResult(false, "자기 자신에게 친구 요청을 보낼 수 없습니다.")
+            return
+        }
+
+        // 먼저 내 정보 조회
+        db.collection(Def.Collection.USERS)
+            .document(myUid)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val myUser = snapshot.toObject(User::class.java)
+
+                if (myUser == null) {
+                    onResult(false, "내 정보를 가져올 수 없습니다.")
+                    return@addOnSuccessListener
+                }
+
+                // 이미 친구인지 확인
+                db.collection(Def.Collection.USERS)
+                    .document(myUid)
+                    .collection(Def.Collection.FRIENDS)
+                    .document(targetUser.uid)
+                    .get()
+                    .addOnSuccessListener { snapshot ->
+                        if (snapshot.exists()) {
+                            onResult(false, "이미 친구입니다.")
+                            return@addOnSuccessListener
+                        }
+
+                        // 이미 요청 보냈는지 확인
+                        db.collection(Def.Collection.USERS)
+                            .document(targetUser.uid)
+                            .collection(Def.Collection.FRIEND_REQUESTS)
+                            .document(myUid)
+                            .get()
+                            .addOnSuccessListener { snapshot ->
+                                if (snapshot.exists()) {
+                                    onResult(false, "이미 요청을 보냈습니다.")
+                                    return@addOnSuccessListener
+                                }
+
+                                val request = hashMapOf(
+                                    Def.FriendReqFields.FROM_UID to myUid,
+                                    Def.FriendReqFields.FROM_NAME to myUser.name,
+                                    Def.FriendReqFields.FROM_EMAIL to myUser.email,
+                                    Def.FriendReqFields.FROM_PROFILE_IMAGES to myUser.profileImageUrl,
+                                    Def.FriendReqFields.FROM_CREATE_AT to System.currentTimeMillis()
+                                        .toString(),
+                                )
+
+                                db.collection(Def.Collection.USERS)
+                                    .document(targetUser.uid)
+                                    .collection(Def.Collection.FRIEND_REQUESTS)
+                                    .document(myUid)
+                                    .set(request)
+                                    .addOnSuccessListener {
+                                        onResult(true, null)
+                                    }
+                                    .addOnFailureListener { e ->
+                                        onResult(false, e.message)
+                                    }
+                            }
+                            .addOnFailureListener { e ->
+                                onResult(false, e.message)
+                            }
+                    }
+                    .addOnFailureListener { e ->
+                        onResult(false, e.message)
+                    }
+            }
+            .addOnFailureListener { e ->
+                onResult(false, e.message)
+            }
+    }
+
+    /**
+     * 이름 + 이메일로 친구 요청 보내기
+     */
+    fun sendFriendRequestByNameAndEmail(
+        name: String,
+        email: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        findUserByNameAndEmail(name, email) { user ->
+            if (user == null) {
+                onResult(false, "사용자를 찾을 수 없습니다.")
+                return@findUserByNameAndEmail
+            }
+            sendFriendRequest(user, onResult)
+        }
+    }
+
+    /**
+     * 친구 요청 목록 가져오기
+     *
+     * 친구 요청을 보낸 사람 목록을 가져옴
+     */
+    fun loadFriendRequest(onResult: (List<User>) -> Unit) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        Timber.d("loadFriendRequest +")
+        db.collection(Def.Collection.USERS)
+            .document(myUid)
+            .collection(Def.Collection.FRIEND_REQUESTS)
+            .orderBy(Def.FriendReqFields.FROM_CREATE_AT, Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, e ->
+                if (snapshot == null || e != null) {
+                    onResult(emptyList())
+                    return@addSnapshotListener
+                }
+
+                val list = snapshot.documents.map {
+                    User(
+                        uid = it.getString(Def.FriendReqFields.FROM_UID) ?: "",
+                        name = it.getString(Def.FriendReqFields.FROM_NAME) ?: "",
+                        email = it.getString(Def.FriendReqFields.FROM_EMAIL) ?: "",
+                        profileImageUrl = it.getString(Def.FriendReqFields.FROM_PROFILE_IMAGES)
+                            ?: ""
+                    )
+                }
+                onResult(list)
+            }
+        Timber.d("loadFriendRequest -")
+    }
+
+    /**
+     * 친구 요청 수락
+     *
+     * 수락하면 서로의 friends에 저장하고, 요청은 삭제
+     */
+    fun acceptFriendRequest(user: User, onResult: (Boolean, String?) -> Unit) {
+        Timber.d("acceptFriendRequest +")
+
+        val myUid = auth.currentUser?.uid ?: return
+
+        db.collection(Def.Collection.USERS)
+            .document(myUid)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val myUser = snapshot.toObject(User::class.java)
+
+                if (myUser == null) {
+                    onResult(false, "내 사용자 정보를 찾을 수 없습니다.")
+                    return@addOnSuccessListener
+                }
+
+                val batch = db.batch()
+                val now = System.currentTimeMillis()
+
+                val myFriendRef = db.collection(Def.Collection.USERS)
+                    .document(myUid)
+                    .collection(Def.Collection.FRIENDS)
+                    .document(user.uid)
+
+                val otherFriendRef = db.collection(Def.Collection.USERS)
+                    .document(user.uid)
+                    .collection(Def.Collection.FRIENDS)
+                    .document(myUid)
+
+                val requestRef = db.collection(Def.Collection.USERS)
+                    .document(myUid)
+                    .collection(Def.Collection.FRIEND_REQUESTS)
+                    .document(user.uid)
+
+                val myFriendData = hashMapOf(
+                    Def.UsersFields.UID to user.uid,
+                    Def.UsersFields.NAME to user.name,
+                    Def.UsersFields.EMAIL to user.email,
+                    Def.UsersFields.PROFILE_IMAGES to user.profileImageUrl,
+                    Def.UsersFields.CREATE_AT to now
+                )
+
+                val otherFriendData = hashMapOf(
+                    Def.UsersFields.UID to myUid,
+                    Def.UsersFields.NAME to myUser.name,
+                    Def.UsersFields.EMAIL to myUser.email,
+                    Def.UsersFields.PROFILE_IMAGES to myUser.profileImageUrl,
+                    Def.UsersFields.CREATE_AT to now
+                )
+
+                batch.set(myFriendRef, myFriendData)
+                batch.set(otherFriendRef, otherFriendData)
+                batch.delete(requestRef)
+
+                batch.commit()
+                    .addOnSuccessListener {
+                        onResult(true, null)
+                    }
+                    .addOnFailureListener { e ->
+                        onResult(false, e.message)
+                    }
+            }
+            .addOnFailureListener { e ->
+                onResult(false, e.message)
+            }
+        Timber.d("acceptFriendRequest -")
+    }
+
+    fun declineFriendRequest(user: User, onResult: (Boolean, String?) -> Unit) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        db.collection(Def.Collection.USERS)
+            .document(myUid)
+            .collection(Def.Collection.FRIEND_REQUESTS)
+            .document(user.uid)
+            .delete()
+            .addOnSuccessListener {
+                onResult(true, null)
+            }
+            .addOnFailureListener { e ->
+                onResult(false, e.message)
+            }
+    }
+
+    /**
+     * 친구 목록 가져오기
+     */
+    fun loadFriendList(onResult: (List<User>) -> Unit) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        db.collection(Def.Collection.USERS)
+            .document(myUid)
+            .collection(Def.Collection.FRIENDS)
+            .orderBy(Def.UsersFields.CREATE_AT, Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, e ->
+                if (snapshot == null || e != null) {
+                    onResult(emptyList())
+                    return@addSnapshotListener
+                }
+
+                val list = snapshot.documents.mapNotNull { documentSnapshot ->
+                    Timber.d("loadFriendList: ${documentSnapshot.data}")
+
+                    User(
+                        uid = documentSnapshot.getString(Def.UsersFields.UID) ?: "",
+                        name = documentSnapshot.getString(Def.UsersFields.NAME) ?: "",
+                        email = documentSnapshot.getString(Def.UsersFields.EMAIL) ?: "",
+                        profileImageUrl = documentSnapshot.getString(Def.UsersFields.PROFILE_IMAGES)
+                            ?: ""
+                    )
+                }
+                onResult(list)
+            }
+    }
+
+    fun deleteFriend(user: User, onResult: (Boolean, String?) -> Unit) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        val myFriendRef = db.collection(Def.Collection.USERS)
+            .document(myUid)
+            .collection(Def.Collection.FRIENDS)
+            .document(user.uid)
+
+        val otherFriendRef = db.collection(Def.Collection.USERS)
+            .document(user.uid)
+            .collection(Def.Collection.FRIENDS)
+            .document(myUid)
+
+        // 예전에 잘못 저장됐을 수 있는 legacy 문서
+        val legacyOtherFriendRef = db.collection(Def.Collection.USERS)
+            .document(user.uid)
+            .collection(Def.Collection.FRIENDS)
+            .document(user.uid)
+
+        val batch = db.batch()
+        batch.delete(myFriendRef)
+        batch.delete(otherFriendRef)
+
+        batch.commit()
+            .addOnSuccessListener {
+                Timber.d("delete success")
+                onResult(true, null)
+            }
+            .addOnFailureListener { e ->
+                Timber.e(e, "delete fail")
                 onResult(false, e.message)
             }
     }

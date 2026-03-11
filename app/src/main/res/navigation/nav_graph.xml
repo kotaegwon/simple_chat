@@ -43,4 +43,11 @@
 
     </fragment>
 
+    <fragment
+        android:id="@+id/UserAddFragment"
+        android:name="com.ko.simple_chat.fragment.FriendReqFragment"
+        tools:layout="@layout/fragment_user_add">
+
+    </fragment>
+
 </navigation>
