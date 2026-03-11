@@ -168,7 +168,9 @@ class LogInFragment : Fragment(), View.OnClickListener {
                     toast(getString(R.string.login_completed, result.user.name))
                     FirebaseManager.updateMyFcmTokenLoginSuccess()
 
-                    findNavController().navigate(R.id.action_to_UserList)
+                    if (findNavController().currentDestination?.id == R.id.LogInFragment) {
+                        findNavController().navigate(R.id.action_to_UserList)
+                    }
                 }
 
                 is LoginResult.NotVerified -> {
