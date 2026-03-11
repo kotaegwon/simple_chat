@@ -55,12 +55,16 @@ class MyFirebaseManagerService : FirebaseMessagingService() {
         val senderUid = message.data["senderUid"] ?: ""
         val receiverUid = message.data["receiverUid"] ?: ""
 
+        val myUid = FirebaseManager.auth.currentUser?.uid
+
         val user = User(
             uid = senderUid,
             name = title
         )
 
-        if(senderUid != receiverUid) showNotification(title, body, user)
+        if(senderUid != myUid) {
+            showNotification(title, body, user)
+        }
     }
 
     /**
@@ -74,7 +78,7 @@ class MyFirebaseManagerService : FirebaseMessagingService() {
 
         val intent = Intent(this, MainActivity::class.java).apply {
             if (user.uid.isNotEmpty()) {
-                putExtra(Def.INTENT_NOTIFICATION, user)
+                putExtra(Def.Intent.NOTIFICATION, user)
             }
 
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
