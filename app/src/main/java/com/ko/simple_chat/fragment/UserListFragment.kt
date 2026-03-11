@@ -1,5 +1,6 @@
 package com.ko.simple_chat.fragment
 
+import android.app.AlertDialog
 import android.app.Dialog
 import android.net.Uri
 import android.os.Bundle
@@ -25,6 +26,7 @@ import com.ko.simple_chat.adapter.RecyclerViewDecoration
 import com.ko.simple_chat.databinding.BottomSheetFriendsBinding
 import com.ko.simple_chat.databinding.BottomSheetMyselfBinding
 import com.ko.simple_chat.databinding.BottomSheetProfileSettingBinding
+import com.ko.simple_chat.databinding.DialogFriendReqBinding
 import com.ko.simple_chat.databinding.DialogProfileImageBinding
 import com.ko.simple_chat.viewmodel.UserListViewModel
 import java.io.File
@@ -72,6 +74,18 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
             }
         }
 
+    override fun useSearchMenu(): Boolean {
+        return true
+    }
+
+    override fun useAddMenu(): Boolean {
+        return true
+    }
+
+    override fun onAddMenuClicked() {
+        showAddFriendDialog()
+    }
+
     override fun inflateBinding(
         inflater: LayoutInflater,
         container: ViewGroup?
@@ -106,7 +120,6 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
 
         super.onViewCreated(view, savedInstanceState)
 
-
         // Adapter 연결
         userListAdapter = UserListAdapter(this)
 
@@ -116,14 +129,14 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
             addItemDecoration(
                 RecyclerViewDecoration(
                     requireContext(),
-                    0,
+                    2,
                     1
                 )
             )
         }
 
         // Firebase에서 사용자 목록을 가져와서 Adapter에 전달
-        userListViewModel.userList.observe(viewLifecycleOwner) { list ->
+        userListViewModel.friendsList.observe(viewLifecycleOwner) { list ->
             originList.apply {
                 clear()
                 addAll(list)
@@ -153,22 +166,12 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
 
         binding.tvMyself.setOnClickListener {
             mySelf?.let {
-//                findNavController().navigate(
-//                    R.id.action_to_ChatRoom,
-//                    Bundle().apply {
-//                        putParcelable(Def.INTENT_USER_INFO, it)
-//                    })
                 showMyselfBottomSheet(it)
             }
         }
 
         binding.imgProfile.setOnClickListener {
             mySelf?.let {
-//                findNavController().navigate(
-//                    R.id.action_to_ChatRoom,
-//                    Bundle().apply {
-//                        putParcelable(Def.INTENT_USER_INFO, it)
-//                    })
                 showMyselfBottomSheet(it)
             }
         }
@@ -261,11 +264,9 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
         }
 
         tvProfile.setOnClickListener {
-            bottomSheetDialog.dismiss()
-            // 여기서 프로필 화면으로 이동하거나 프로필 다이얼로그 띄우기 가능
-            // 예:
-            // findNavController().navigate(...)
             showProfileImageBottomSheet()
+
+            bottomSheetDialog.dismiss()
         }
 
         tvChat.setOnClickListener {
@@ -274,7 +275,7 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
             findNavController().navigate(
                 R.id.action_to_ChatRoom,
                 Bundle().apply {
-                    putParcelable(Def.INTENT_USER_INFO, user)
+                    putParcelable(Def.Intent.USER_INFO, user)
                 }
             )
         }
@@ -292,9 +293,14 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
 
         bottomSheetDialog.setContentView(binding.root)
 
+        val menu1 = binding.layoutMenu1
+        val menu2 = binding.layoutMenu2
         val imageProfile = binding.imgProfile
         val tvChat = binding.tvChat
+        val tvDelete = binding.tvDelete
         val btnClose = binding.btnClose
+        val btnDeleteYes = binding.btnDeleteYes
+        val btnDeleteNo = binding.btnDeleteNo
 
         Glide.with(imageProfile.context)
             .load(user.profileImageUrl)
@@ -313,13 +319,30 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
             findNavController().navigate(
                 R.id.action_to_ChatRoom,
                 Bundle().apply {
-                    putParcelable(Def.INTENT_USER_INFO, user)
+                    putParcelable(Def.Intent.USER_INFO, user)
                 }
             )
         }
 
+        tvDelete.setOnClickListener {
+            menu1.visibility = View.GONE
+            menu2.visibility = View.VISIBLE
+        }
+
         btnClose.setOnClickListener {
             bottomSheetDialog.dismiss()
+        }
+
+        btnDeleteYes.setOnClickListener {
+            FirebaseManager.deleteFriend(user) { success, message ->
+                Timber.d("showUserBottomSheet: $success, $message")
+            }
+            bottomSheetDialog.dismiss()
+        }
+
+        btnDeleteNo.setOnClickListener {
+            menu1.visibility = View.VISIBLE
+            menu2.visibility = View.GONE
         }
 
         bottomSheetDialog.show()
@@ -374,7 +397,36 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
         dialog.show()
     }
 
-    private fun showLoading(show: Boolean){
+    private fun showAddFriendDialog() {
+        val binding = DialogFriendReqBinding.inflate(layoutInflater)
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(binding.root)
+            .create()
+
+        val editName = binding.editReqName
+        val editEmail = binding.editReqEmail
+        val btnCancel = binding.btnDialogCancel
+        val btnOkay = binding.btnDialogOkay
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        btnOkay.setOnClickListener {
+            val name = editName.text.toString().trim()
+            val email = editEmail.text.toString().trim()
+
+            FirebaseManager.sendFriendRequestByNameAndEmail(name, email) { success, message ->
+                Timber.d("showAddFriendDialog: $success, $message")
+            }
+
+            dialog.dismiss()
+        }
+        dialog.show()
+    }
+
+    private fun showLoading(show: Boolean) {
         binding.loadingOverlay.visibility = if (show) View.VISIBLE else View.GONE
     }
 }

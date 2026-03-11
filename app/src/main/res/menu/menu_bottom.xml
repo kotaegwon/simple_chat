@@ -10,4 +10,9 @@
         android:id="@+id/ChatListFragment"
         android:icon="@drawable/mode_white"
         android:title="채팅" />
+
+    <item
+        android:id="@+id/UserAddFragment"
+        android:icon="@drawable/person_add"
+        android:title="친구 추가" />
 </menu>

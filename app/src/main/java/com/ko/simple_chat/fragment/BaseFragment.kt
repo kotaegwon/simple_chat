@@ -7,6 +7,8 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.MenuProvider
@@ -119,6 +121,16 @@ abstract class BaseFragment<VB : ViewBinding, T> : Fragment() {
     }
 
     /* ===========================+
+        Menu Option
+    =============================*/
+
+    // 각 Fragment에서 필요하면 true로 변경
+    protected open fun useSearchMenu(): Boolean = true
+    protected open fun useAddMenu(): Boolean = true
+
+    // 각 Fragment에서 메뉴 클릭 처리
+    protected open fun onAddMenuClicked() {}
+    /* ===========================+
         Menu Setting
     =============================*/
 
@@ -131,19 +143,31 @@ abstract class BaseFragment<VB : ViewBinding, T> : Fragment() {
                 menu: Menu,
                 menuInflater: MenuInflater
             ) {
-
                 menuInflater.inflate(R.menu.menu_toolbar, menu)
 
-                val searchItem = menu.findItem(R.id.toolbar_search)
-                val searchView = searchItem.actionView as? SearchView ?: return
+                // 검색 아이콘 표시/숨김
+                menu.findItem(R.id.toolbar_search).isVisible = useSearchMenu()
 
-                initSearchView(searchView)
+                // 추가 아이콘 표시/숨김
+                menu.findItem(R.id.toolbar_add).isVisible = useAddMenu()
+
+                if (useSearchMenu()) {
+                    val searchItem = menu.findItem(R.id.toolbar_search)
+                    val searchView = searchItem.actionView as? SearchView ?: return
+
+                    initSearchView(searchView)
+                }
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 return when (menuItem.itemId) {
                     android.R.id.home -> {
                         findNavController().popBackStack()
+                        true
+                    }
+
+                    R.id.toolbar_add -> {
+                        onAddMenuClicked()
                         true
                     }
 
@@ -157,5 +181,14 @@ abstract class BaseFragment<VB : ViewBinding, T> : Fragment() {
             viewLifecycleOwner,
             Lifecycle.State.RESUMED
         )
+    }
+
+    fun Fragment.toast(@StringRes resId: Int) {
+        Toast.makeText(requireContext(), resId, Toast.LENGTH_SHORT).show()
+    }
+
+    // string.xml string toast
+    fun Fragment.toast(msg: String) {
+        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
     }
 }
