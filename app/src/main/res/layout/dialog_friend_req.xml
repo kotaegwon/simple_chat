@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 이메일 -->
+    <EditText
+        android:id="@+id/edit_req_email"
+        style="@style/EditText_LogIn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/edit_email"
+        android:inputType="textEmailAddress"
+        android:paddingVertical="12dp"
+        android:textColorHint="#80FF8800" />
+
+    <!-- 이름 -->
+    <EditText
+        android:id="@+id/edit_req_name"
+        style="@style/EditText_LogIn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:hint="이름을 입력하세요"
+        android:paddingVertical="12dp"
+        android:textColorHint="#80FF8800" />
+
+    <!-- 버튼 영역 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal">
+
+        <!-- 취소 버튼 -->
+        <Button
+            android:id="@+id/btn_dialog_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_dialog_cancel"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
+
+        <!-- 남는 공간 채움 -->
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- 확인 버튼 -->
+        <Button
+            android:id="@+id/btn_dialog_okay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_dialog_okay"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
+
+    </LinearLayout>
+
+</LinearLayout>
