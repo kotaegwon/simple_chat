@@ -73,72 +73,28 @@ class MainActivity : AppCompatActivity() {
         if (intent?.extras == null) return
 
         val user = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(Def.INTENT_NOTIFICATION, User::class.java)
+            intent.getParcelableExtra(Def.Intent.NOTIFICATION, User::class.java)
         } else {
             @Suppress("DEPRECATION")
-            intent.getParcelableExtra<User>(Def.INTENT_NOTIFICATION)
+            intent.getParcelableExtra<User>(Def.Intent.NOTIFICATION)
         } ?: run {
-            val name = intent.getStringExtra("senderName") ?: return
-            val senderUid = intent.getStringExtra("senderUid") ?: return
+            val name = intent.getStringExtra(Def.Intent.SENDER_NAME) ?: return
+            val senderUid = intent.getStringExtra(Def.Intent.SENDER_UID) ?: return
             User(uid = senderUid, name = name)
         }
 
         val bundle = Bundle().apply {
-            putParcelable(Def.INTENT_USER_INFO, user)
+            putParcelable(Def.Intent.USER_INFO, user)
         }
 
         if (navController.currentDestination?.id != R.id.ChatRoomFragment) {
             navController.navigate(R.id.ChatRoomFragment, bundle)
         }
 
-        intent.removeExtra(Def.INTENT_NOTIFICATION)
-        intent.removeExtra("senderName")
-        intent.removeExtra("senderUid")
+        intent.removeExtra(Def.Intent.NOTIFICATION)
+        intent.removeExtra(Def.Intent.SENDER_NAME)
+        intent.removeExtra(Def.Intent.SENDER_UID)
     }
-//
-//    private fun handleNotificationIntent(intent: Intent?) {
-//        Timber.d("handleNotificationIntent: intent extras = ${intent?.extras}")
-//
-//        if (intent?.extras == null) return
-//
-//        val user = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-//            intent.getParcelableExtra(Def.INTENT_NOTIFICATION, User::class.java)
-//        } else {
-//            @Suppress("DEPRECATION")
-//            (intent.getParcelableExtra<User>(Def.INTENT_NOTIFICATION))
-//        } ?: return
-//
-//        val bundle = Bundle().apply {
-//            putParcelable(Def.INTENT_USER_INFO, user)
-//        }
-//
-//        if (navController.currentDestination?.id != R.id.ChatRoomFragment) {
-//            navController.navigate(R.id.ChatRoomFragment, bundle)
-//        }
-//    }
-//
-//
-//    private fun checkFcmIntent(intent: Intent?) {
-//        Timber.d("checkFcmIntent: intent extras = ${intent?.extras}")
-//
-//        if (intent?.extras == null) return
-//
-//        val name = intent.getStringExtra("senderName")
-//        val senderUid = intent.getStringExtra("senderUid")
-//
-//        val user = User(
-//            uid = senderUid ?: "",
-//            name = name ?: ""
-//        )
-//
-//        val bundle = Bundle().apply {
-//            putParcelable(Def.INTENT_USER_INFO, user)
-//        }
-//
-//        if (navController.currentDestination?.id != R.id.ChatRoomFragment) {
-//            navController.navigate(R.id.ChatRoomFragment, bundle)
-//        }
-//    }
 
     private val permissionLauncher =
         registerForActivityResult(

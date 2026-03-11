@@ -27,6 +27,14 @@ class ChatListFragment : BaseFragment<FragmentChatListBinding, ChatListItem>(),
 
     var myInfo: User? = null
 
+    override fun useSearchMenu(): Boolean {
+        return true
+    }
+
+    override fun useAddMenu(): Boolean {
+        return false
+    }
+
     override fun inflateBinding(
         inflater: LayoutInflater,
         container: ViewGroup?
@@ -107,7 +115,7 @@ class ChatListFragment : BaseFragment<FragmentChatListBinding, ChatListItem>(),
                 findNavController().navigate(
                     R.id.action_to_ChatRoom,
                     Bundle().apply {
-                        putParcelable(Def.INTENT_USER_INFO, it)
+                        putParcelable(Def.Intent.USER_INFO, it)
                     })
             }
         }
@@ -127,7 +135,7 @@ class ChatListFragment : BaseFragment<FragmentChatListBinding, ChatListItem>(),
         findNavController().navigate(
             R.id.action_to_ChatRoom,
             Bundle().apply {
-                putParcelable(Def.INTENT_USER_INFO, user)
+                putParcelable(Def.Intent.USER_INFO, user)
             })
         Timber.d("onItemClick: $user")
     }

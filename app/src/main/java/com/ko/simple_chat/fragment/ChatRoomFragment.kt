@@ -40,6 +40,13 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, ChatRoom>(), View
     var myUid: String = ""
     var otherUid: String = ""
 
+    override fun useSearchMenu(): Boolean {
+        return true
+    }
+
+    override fun useAddMenu(): Boolean {
+        return false
+    }
 
     override fun inflateBinding(
         inflater: LayoutInflater,
@@ -137,12 +144,12 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, ChatRoom>(), View
     private fun getArgument(): User? {
         val user = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             arguments?.getParcelable(
-                Def.INTENT_USER_INFO,
+                Def.Intent.USER_INFO,
                 User::class.java
             )
         } else {
             @Suppress("DEPRECATION")
-            arguments?.getParcelable("diary_item")
+            arguments?.getParcelable(Def.Intent.USER_INFO)
         }
 
         Timber.d("getArgument: $user")
@@ -191,7 +198,7 @@ class ChatRoomFragment : BaseFragment<FragmentChatRoomBinding, ChatRoom>(), View
                             if (success) {
                                 binding.editMessage.text.clear()
                             } else {
-                                //TODO 재전송 GUI, 로직 표시
+
                             }
                         }
                     }
