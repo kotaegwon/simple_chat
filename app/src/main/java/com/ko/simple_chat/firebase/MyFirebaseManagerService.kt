@@ -53,7 +53,6 @@ class MyFirebaseManagerService : FirebaseMessagingService() {
         val title = message.notification?.title ?: "새 메시지"
         val body = message.notification?.body ?: "메시지가 도착했습니다."
         val senderUid = message.data["senderUid"] ?: ""
-        val receiverUid = message.data["receiverUid"] ?: ""
 
         val myUid = FirebaseManager.auth.currentUser?.uid
 
