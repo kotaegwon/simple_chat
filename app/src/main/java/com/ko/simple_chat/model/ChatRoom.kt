@@ -16,6 +16,8 @@ data class ChatRoom(
     val otherUid: String = "",
     val name: String = "",
     val message: String = "",
+    val imageUrl: String = "",
+    val type: String = "", // text, image
     val time: Long = 0L,
     val read: Boolean = false
 )

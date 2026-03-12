@@ -39,5 +39,6 @@
     <string name="delete_confirm">정말 삭제하시겠습니까?</string>
     <string name="delete_yes">예</string>
     <string name="delete_no">아니오</string>
-
+    <string name="send_fail">메시지 전송에 실패했습니다</string>
+    <string name="chat_edit_hint">이미지 선택 시 텍스트 입력 불가</string>
 </resources>

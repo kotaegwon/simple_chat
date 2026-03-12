@@ -10,4 +10,6 @@ sealed class ChatTypeItem {
     data class Send(val chat: ChatRoom) : ChatTypeItem()
     data class Receive(val chat: ChatRoom) : ChatTypeItem()
     data class Date(val date: String) : ChatTypeItem()
+    data class SendImage(val chat: ChatRoom) : ChatTypeItem()
+    data class ReceiveImage(val chat: ChatRoom) : ChatTypeItem()
 }

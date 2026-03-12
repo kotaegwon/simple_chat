@@ -3,10 +3,13 @@ package com.ko.simple_chat.adapter
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.ko.simple_chat.Utils.Utils
 import com.ko.simple_chat.databinding.DateHeaderItemBinding
-import com.ko.simple_chat.databinding.ReceiveItemBinding
-import com.ko.simple_chat.databinding.SendItemBinding
+import com.ko.simple_chat.databinding.ReceiveImgItemBinding
+import com.ko.simple_chat.databinding.ReceiveTextItemBinding
+import com.ko.simple_chat.databinding.SendImgItemBinding
+import com.ko.simple_chat.databinding.SendTextItemBinding
 import com.ko.simple_chat.model.ChatRoom
 import timber.log.Timber
 
@@ -14,7 +17,12 @@ import timber.log.Timber
  * 리사이클러뷰 어댑터
  * 송신 메시지와 수신 메시지를 표시한다
  */
-class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ChatRoomAdapter(private val listener: Listener) :
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    interface Listener {
+        fun onImageClick(imageUri: String)
+    }
 
     // 리사이클러뷰 아이템 리스트
     val itemList = mutableListOf<ChatTypeItem>()
@@ -22,8 +30,10 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     // 송신, 수신 메시지 구분을 위한 타입
     companion object {
         const val SEND = 0
-        const val RECEIVE = 1
-        const val DATE = 2
+        const val RECEIVE = SEND + 1
+        const val DATE = RECEIVE + 1
+        const val SEND_IMAGE = DATE + 1
+        const val RECEIVE_IMAGE = SEND_IMAGE + 1
     }
 
     /**
@@ -43,6 +53,8 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             is ChatTypeItem.Send -> SEND
             is ChatTypeItem.Receive -> RECEIVE
             is ChatTypeItem.Date -> DATE
+            is ChatTypeItem.SendImage -> SEND_IMAGE
+            is ChatTypeItem.ReceiveImage -> RECEIVE_IMAGE
         }
     }
 
@@ -62,18 +74,28 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         return when (viewType) {
             SEND -> {
-                val binding = SendItemBinding.inflate(inflater, parent, false)
+                val binding = SendTextItemBinding.inflate(inflater, parent, false)
                 SendViewHolder(binding)
             }
 
             RECEIVE -> {
-                val binding = ReceiveItemBinding.inflate(inflater, parent, false)
+                val binding = ReceiveTextItemBinding.inflate(inflater, parent, false)
                 ReceiveViewHolder(binding)
             }
 
             DATE -> {
                 val binding = DateHeaderItemBinding.inflate(inflater, parent, false)
                 DateViewHolder(binding)
+            }
+
+            SEND_IMAGE -> {
+                val bind = SendImgItemBinding.inflate(inflater, parent, false)
+                SendImageViewHolder(bind, listener)
+            }
+
+            RECEIVE_IMAGE -> {
+                val bind = ReceiveImgItemBinding.inflate(inflater, parent, false)
+                ReceiveImageViewHolder(bind, listener)
             }
 
             else -> throw IllegalArgumentException("Invalid view type")
@@ -96,6 +118,8 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             is ChatTypeItem.Send -> (holder as SendViewHolder).bind(uiType.chat)
             is ChatTypeItem.Receive -> (holder as ReceiveViewHolder).bind(uiType.chat)
             is ChatTypeItem.Date -> (holder as DateViewHolder).bind(uiType.date)
+            is ChatTypeItem.SendImage -> (holder as SendImageViewHolder).bind(uiType.chat)
+            is ChatTypeItem.ReceiveImage -> (holder as ReceiveImageViewHolder).bind(uiType.chat)
         }
     }
 
@@ -113,7 +137,7 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
      *
      * @param binding 송신 메시지 뷰바인딩
      */
-    class SendViewHolder(val binding: SendItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    class SendViewHolder(val binding: SendTextItemBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(chat: ChatRoom) {
             Timber.d("SendViewHolder bind : $chat")
@@ -127,7 +151,7 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
      *
      * @param binding 수신 메시지 뷰바인딩
      */
-    class ReceiveViewHolder(val binding: ReceiveItemBinding) :
+    class ReceiveViewHolder(val binding: ReceiveTextItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(chat: ChatRoom) {
@@ -145,8 +169,40 @@ class ChatRoomAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     class DateViewHolder(val binding: DateHeaderItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(date: String){
+        fun bind(date: String) {
             binding.tvDate.text = date
+        }
+    }
+
+    class SendImageViewHolder(val binding: SendImgItemBinding, val listener: Listener) :
+        RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(chat: ChatRoom) {
+            binding.tvTime.text = Utils.formatTIme(chat.time)
+
+            Glide.with(binding.imgSend.context)
+                .load(chat.imageUrl)
+                .into(binding.imgSend)
+
+            binding.imgSend.setOnClickListener {
+                listener.onImageClick(chat.imageUrl)
+            }
+        }
+    }
+
+    class ReceiveImageViewHolder(val binding: ReceiveImgItemBinding, val listener: Listener) :
+        RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(chat: ChatRoom) {
+            binding.tvTime.text = Utils.formatTIme(chat.time)
+
+            Glide.with(binding.imgReceive.context)
+                .load(chat.imageUrl)
+                .into(binding.imgReceive)
+
+            binding.imgReceive.setOnClickListener {
+                listener.onImageClick(chat.imageUrl)
+            }
         }
     }
 }

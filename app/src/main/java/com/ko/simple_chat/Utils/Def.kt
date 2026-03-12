@@ -54,4 +54,9 @@ object Def {
         const val FROM_PROFILE_IMAGES = "fromProfileImages"
         const val FROM_CREATE_AT = "fromCreateAt"
     }
+
+    object MessageType{
+        const val TEXT = "text"
+        const val IMAGE = "image"
+    }
 }
