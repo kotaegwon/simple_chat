@@ -284,11 +284,14 @@ object FirebaseManager {
                 otherUid = otherUid,
                 name = name,
                 message = message,
+                imageUrl = "",
+                type = Def.MessageType.TEXT,
                 time = System.currentTimeMillis()
             )
 
             // Firestore에서 'chatRooms' 컬렉션 내 방 ID(roomUid)에 해당하는 문서 참조 생성
-            val roomRef = db.collection(Def.Collection.CHAT_ROOMS).document(roomUid)
+            val roomRef = db.collection(Def.Collection.CHAT_ROOMS)
+                .document(roomUid)
 
             /**
              * 방 정보
@@ -316,6 +319,59 @@ object FirebaseManager {
                     onResult(true)
                 }.addOnFailureListener {
                     onResult(false)
+                }
+        }
+    }
+
+    fun sendImageMessage(otherUid: String, imageUri: Uri, onResult: (Boolean, String?) -> Unit) {
+        val myUid = auth.currentUser?.uid ?: return
+        val roomUid = makeRoom(myUid, otherUid)
+
+        loadMyUserInfo { user ->
+            val name = user?.name ?: ""
+            val fileName = "${System.currentTimeMillis()}_${myUid}.jpg"
+            val imageRef = storage.reference.child("chatImages/$roomUid/$fileName")
+
+            imageRef.putFile(imageUri)
+                .addOnSuccessListener {
+                    imageRef.downloadUrl
+                        .addOnSuccessListener { downloadUri ->
+                            val chat = ChatRoom(
+                                myUid = myUid,
+                                otherUid = otherUid,
+                                name = name,
+                                message = "",
+                                imageUrl = downloadUri.toString(),
+                                type = Def.MessageType.IMAGE,
+                                time = System.currentTimeMillis()
+                            )
+
+                            val roomRef = db.collection(Def.Collection.CHAT_ROOMS)
+                                .document(roomUid)
+
+                            val roomData = hashMapOf(
+                                Def.Collection.USERS to listOf(myUid, otherUid),
+                                Def.ChatRoomsFields.LAST_MESSAGE to "[이미지]",
+                                Def.ChatRoomsFields.UPDATE_AT to chat.time
+                            )
+
+                            roomRef.set(roomData, SetOptions.merge())
+
+                            roomRef.collection(Def.Collection.CHAT_ROOMS_MESSAGES)
+                                .add(chat)
+                                .addOnSuccessListener {
+                                    onResult(true, null)
+                                }
+                                .addOnFailureListener { e ->
+                                    onResult(false, e.message)
+                                }
+                        }
+                        .addOnFailureListener { e ->
+                            onResult(false, e.message)
+                        }
+                }
+                .addOnFailureListener { e ->
+                    onResult(false, e.message)
                 }
         }
     }
@@ -367,8 +423,13 @@ object FirebaseManager {
                     .orderBy(Def.ChatRoomsFields.UPDATE_AT, Query.Direction.DESCENDING)
                     .addSnapshotListener { snapshot, e ->
 
-                        if (snapshot == null || e != null) {
-                            onResult(emptyList())
+                        if (e != null) {
+                            Timber.e(e, "loadChatList listen error")
+                            return@addSnapshotListener
+                        }
+
+                        if (snapshot == null) {
+                            Timber.d("loadChatList snapshot is null")
                             return@addSnapshotListener
                         }
 
@@ -420,12 +481,14 @@ object FirebaseManager {
                                         onResult(result.sortedByDescending { it.updateAt })
                                     }
                                 }
-                                .addOnFailureListener {
+                                .addOnFailureListener { error ->
+                                    Timber.e(error, "loadChatList user load fail: $otherUid")
+
                                     result.add(
                                         ChatListItem(
                                             roomId = roomId,
                                             otherUid = otherUid,
-                                            otherName = "(불러오기 실패)",
+                                            otherName = if (otherUid == myUid) "나" else "(불러오기 실패)",
                                             lastMessage = room.lastMessage,
                                             updateAt = room.updateAt,
                                             profileImageUrl = ""
@@ -440,15 +503,22 @@ object FirebaseManager {
                         }
                     }
             }
-            .addOnFailureListener {
-                // 친구 목록을 못 읽어도 self chat은 보여주기
+            .addOnFailureListener { error ->
+                Timber.e(error, "friend list load fail")
+
+                // 친구 목록을 못 읽어도 self chat만 보여주기
                 db.collection(Def.Collection.CHAT_ROOMS)
                     .whereArrayContains(Def.Collection.USERS, myUid)
                     .orderBy(Def.ChatRoomsFields.UPDATE_AT, Query.Direction.DESCENDING)
                     .addSnapshotListener { snapshot, e ->
 
-                        if (snapshot == null || e != null) {
-                            onResult(emptyList())
+                        if (e != null) {
+                            Timber.e(e, "loadChatList fallback listen error")
+                            return@addSnapshotListener
+                        }
+
+                        if (snapshot == null) {
+                            Timber.d("loadChatList fallback snapshot is null")
                             return@addSnapshotListener
                         }
 
@@ -511,15 +581,59 @@ object FirebaseManager {
             .addOnSuccessListener {
                 imageRef.downloadUrl
                     .addOnSuccessListener { downloadUri ->
+                        val newProfileUrl = downloadUri.toString()
+
                         db.collection(Def.Collection.USERS)
                             .document(uid)
-                            .update(Def.UsersFields.PROFILE_IMAGES, downloadUri.toString())
+                            .update(Def.UsersFields.PROFILE_IMAGES, newProfileUrl)
                             .addOnSuccessListener {
-                                onResult(true, downloadUri.toString())
+                                updateFriendProfileImage(uid, newProfileUrl) { success, error ->
+                                    if (success) {
+                                        onResult(true, newProfileUrl)
+                                    } else {
+                                        onResult(false, error)
+                                    }
+                                }
                             }
                             .addOnFailureListener { e ->
                                 onResult(false, e.message)
                             }
+                    }
+                    .addOnFailureListener { e ->
+                        onResult(false, e.message)
+                    }
+            }
+            .addOnFailureListener { e ->
+                onResult(false, e.message)
+            }
+    }
+
+    private fun updateFriendProfileImage(
+        myUid: String,
+        newProfileUrl: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        db.collection(Def.Collection.USERS)
+            .document(myUid)
+            .collection(Def.Collection.FRIENDS)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val batch = db.batch()
+
+                snapshot.documents.forEach { doc ->
+                    val friendUid = doc.getString(Def.UsersFields.UID) ?: return@forEach
+
+                    val otherFriendRef = db.collection(Def.Collection.USERS)
+                        .document(friendUid)
+                        .collection(Def.Collection.FRIENDS)
+                        .document(myUid)
+
+                    batch.update(otherFriendRef, Def.UsersFields.PROFILE_IMAGES, newProfileUrl)
+                }
+
+                batch.commit()
+                    .addOnSuccessListener {
+                        onResult(true, null)
                     }
                     .addOnFailureListener { e ->
                         onResult(false, e.message)
@@ -547,6 +661,23 @@ object FirebaseManager {
             .addOnFailureListener { snapshot ->
                 onResult(null)
             }
+    }
+
+    /**
+     * 이름 + 이메일로 친구 요청 보내기
+     */
+    fun sendFriendRequestByNameAndEmail(
+        name: String,
+        email: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        findUserByNameAndEmail(name, email) { user ->
+            if (user == null) {
+                onResult(false, "사용자를 찾을 수 없습니다.")
+                return@findUserByNameAndEmail
+            }
+            sendFriendRequest(user, onResult)
+        }
     }
 
     /**
@@ -633,23 +764,6 @@ object FirebaseManager {
     }
 
     /**
-     * 이름 + 이메일로 친구 요청 보내기
-     */
-    fun sendFriendRequestByNameAndEmail(
-        name: String,
-        email: String,
-        onResult: (Boolean, String?) -> Unit
-    ) {
-        findUserByNameAndEmail(name, email) { user ->
-            if (user == null) {
-                onResult(false, "사용자를 찾을 수 없습니다.")
-                return@findUserByNameAndEmail
-            }
-            sendFriendRequest(user, onResult)
-        }
-    }
-
-    /**
      * 친구 요청 목록 가져오기
      *
      * 친구 요청을 보낸 사람 목록을 가져옴
@@ -657,7 +771,6 @@ object FirebaseManager {
     fun loadFriendRequest(onResult: (List<User>) -> Unit) {
         val myUid = auth.currentUser?.uid ?: return
 
-        Timber.d("loadFriendRequest +")
         db.collection(Def.Collection.USERS)
             .document(myUid)
             .collection(Def.Collection.FRIEND_REQUESTS)
@@ -679,7 +792,6 @@ object FirebaseManager {
                 }
                 onResult(list)
             }
-        Timber.d("loadFriendRequest -")
     }
 
     /**
@@ -755,6 +867,9 @@ object FirebaseManager {
         Timber.d("acceptFriendRequest -")
     }
 
+    /**
+     * 친구 요청 거부
+     */
     fun declineFriendRequest(user: User, onResult: (Boolean, String?) -> Unit) {
         val myUid = auth.currentUser?.uid ?: return
 
@@ -802,6 +917,9 @@ object FirebaseManager {
             }
     }
 
+    /**
+     * 친구 삭제
+     */
     fun deleteFriend(user: User, onResult: (Boolean, String?) -> Unit) {
         val myUid = auth.currentUser?.uid ?: return
 
@@ -814,12 +932,6 @@ object FirebaseManager {
             .document(user.uid)
             .collection(Def.Collection.FRIENDS)
             .document(myUid)
-
-        // 예전에 잘못 저장됐을 수 있는 legacy 문서
-        val legacyOtherFriendRef = db.collection(Def.Collection.USERS)
-            .document(user.uid)
-            .collection(Def.Collection.FRIENDS)
-            .document(user.uid)
 
         val batch = db.batch()
         batch.delete(myFriendRef)
