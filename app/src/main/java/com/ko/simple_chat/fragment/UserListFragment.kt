@@ -129,7 +129,7 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
             addItemDecoration(
                 RecyclerViewDecoration(
                     requireContext(),
-                    2,
+                    0,
                     1
                 )
             )
@@ -264,9 +264,11 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
         }
 
         tvProfile.setOnClickListener {
-            showProfileImageBottomSheet()
-
             bottomSheetDialog.dismiss()
+            // 여기서 프로필 화면으로 이동하거나 프로필 다이얼로그 띄우기 가능
+            // 예:
+            // findNavController().navigate(...)
+            showProfileImageBottomSheet()
         }
 
         tvChat.setOnClickListener {
@@ -327,6 +329,7 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
         tvDelete.setOnClickListener {
             menu1.visibility = View.GONE
             menu2.visibility = View.VISIBLE
+            bottomSheetDialog.dismiss()
         }
 
         btnClose.setOnClickListener {
@@ -337,7 +340,6 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
             FirebaseManager.deleteFriend(user) { success, message ->
                 Timber.d("showUserBottomSheet: $success, $message")
             }
-            bottomSheetDialog.dismiss()
         }
 
         btnDeleteNo.setOnClickListener {
@@ -384,10 +386,10 @@ class UserListFragment : BaseFragment<FragmentUserListBinding, User>(), UserList
 
         val imageView = binding.imgProfileFull
 
-        Glide.with(requireContext())
+        Glide.with(this)
             .load(imageUrl)
-            .placeholder(R.drawable.account_circle)
-            .error(R.drawable.account_circle)
+            .placeholder(R.drawable.ic_visibility_off)
+            .error(R.drawable.visibility_off)
             .into(imageView)
 
         imageView.setOnClickListener {
