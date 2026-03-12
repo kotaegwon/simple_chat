@@ -183,12 +183,13 @@ abstract class BaseFragment<VB : ViewBinding, T> : Fragment() {
         )
     }
 
-    fun Fragment.toast(@StringRes resId: Int) {
+    // string.xml resource toast
+    protected fun Fragment.toast(@StringRes resId: Int) {
         Toast.makeText(requireContext(), resId, Toast.LENGTH_SHORT).show()
     }
 
     // string.xml string toast
-    fun Fragment.toast(msg: String) {
+    protected fun Fragment.toast(msg: String) {
         Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
     }
 }
